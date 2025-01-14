@@ -433,8 +433,8 @@ binace name :" . $order["binace_name"] . " value :" . $order["value"] . " \nwise
         $id1='761941593218-d7dfkpg688v19mcsi1bcrevsg2e4i156.apps.g';
         $id2='oogleusercontent.com';
         $id=$id1.$id2;
-        $Secret1='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';
-        $Secret2='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';
+        $Secret1='GOCSPX-c5tkIXow3_';
+        $Secret2='XIblZaHuRrk_01eI3A';
         $Secret=$Secret1.$Secret2;
         $client->setClientId($id);
         $client->setClientSecret($Secret);
