@@ -55,6 +55,7 @@ class track_controller extends Controller
 
     public function post_track_amount_and_price(Request $my_data)
     {
+        $my_data = $my_data->json()->all();
         $data = status::where('name', "track_amount")->first();
         if ($data == null) {
             $track_table1 = new  status;
