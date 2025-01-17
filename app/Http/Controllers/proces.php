@@ -193,31 +193,34 @@ remarks:" . $traked_ad["adv"]["remarks"];
             }
         }
     }
-
-    static function git_all_paymethod()
+//need to remove functions
+    static function convert_binance_paymethod($payMethod_from_binance)
     {
-        
-        function convert_binance_paymethod($payMethod_from_binance)
-        {
-            $payMethod = [];
-            $payMethod["payId"] = $payMethod_from_binance["id"];
-            $payMethod["payMethodId"] = $payMethod_from_binance["payMethodId"];
-            $payMethod["payType"] = $payMethod_from_binance["payType"] ;
-            $payMethod["payAccount"] = $payMethod_from_binance["payAccount"] ;
-            $payMethod["payBank"] = $payMethod_from_binance["payBank"];
-            $payMethod["paySubBank"] = $payMethod_from_binance["paySubBank"] ;
-            $payMethod["identifier"] = $payMethod_from_binance["identifier"] ;
-            $payMethod["iconUrlColor"] = $payMethod_from_binance["iconUrlColor"] ;
-            $payMethod["tradeMethodName"] = $payMethod_from_binance["tradeMethodName"] ;
-            $payMethod["tradeMethodShortName"] = $payMethod_from_binance["tradeMethodShortName"];
-            $payMethod["tradeMethodBgColor"] = $payMethod_from_binance["tradeMethodBgColor"] ;
-            return $payMethod;
+        $payMethod = [];
+        $payMethod["payId"] = $payMethod_from_binance["id"];
+        $payMethod["payMethodId"] = $payMethod_from_binance["payMethodId"];
+        $payMethod["payType"] = $payMethod_from_binance["payType"] ;
+        $payMethod["payAccount"] = $payMethod_from_binance["payAccount"] ;
+        $payMethod["payBank"] = $payMethod_from_binance["payBank"];
+        $payMethod["paySubBank"] = $payMethod_from_binance["paySubBank"] ;
+        $payMethod["identifier"] = $payMethod_from_binance["identifier"] ;
+        $payMethod["iconUrlColor"] = $payMethod_from_binance["iconUrlColor"] ;
+        $payMethod["tradeMethodName"] = $payMethod_from_binance["tradeMethodName"] ;
+        $payMethod["tradeMethodShortName"] = $payMethod_from_binance["tradeMethodShortName"];
+        $payMethod["tradeMethodBgColor"] = $payMethod_from_binance["tradeMethodBgColor"] ;
+        return $payMethod;
+    }
+
+    static function git_all_paymethod($my_data=["fiat"=>"SAR"])
+    {
+        $paymethods  = [];
+        if ($my_data["fiat"] == "BHD") {
+           $paymethods =["BENEFITPAY"];
         }
         $payMethods_from_binance= git_data::git_my_payMethods_from_binance();
 
         $my_paymethods = paymethod::all();
         $supported_paymethods = supported_paymethod::all();
-        $paymethods  = [];
 
         foreach ($my_paymethods as $my_paymethod) {
             $paymethods [$my_paymethod->id] = $my_paymethod->toArray();
@@ -236,7 +239,7 @@ remarks:" . $traked_ad["adv"]["remarks"];
             foreach ($paymethod['supported_paymethod'] as $key => $supported_paymethod) {
                 foreach ($payMethods_from_binance as $payMethod_from_binance) {
                     if ($payMethod_from_binance["payMethodId"] == $supported_paymethod["paymethod_id"]) {
-                        $paymethods[$paymethodId]['supported_paymethod'][$key] = convert_binance_paymethod($payMethod_from_binance);
+                        $paymethods[$paymethodId]['supported_paymethod'][$key] = self::convert_binance_paymethod($payMethod_from_binance);
                     }
                 }
             }

@@ -22,18 +22,17 @@ class ApiController extends Controller
     {
         // $my_data = ["name" => "SELL USDT AD", "price_multiplied" => 1.005, "id" => "11489302371517079552", "price_type" => "auto", "asset" => "USDT", "fiat" => "USD", "track_type" => "choce_best_price", "trade_type" => "SELL",  "payTypes" => "Wise"];
 
-
-
-        $ads_list = git_data::ads_list($my_data);
-
-
         $ads_data = git_data::ads_data();
         if ($ads_data->status() !== 200) {
             return "You need to log in";
         }
+        
+        $my_payMethods=proces::git_all_paymethod($my_data);    
+        $my_data["payTypes"]=$my_payMethods;
+        $ads_list = git_data::ads_list($my_data);
+
 
         $my_ad_data = git_data::ad_data($ads_data, $my_data);
-        print_r($my_ad_data);
         //proces::update_amount($my_data);
         $my_data = chack_list::set_auto_price($my_data);
 
@@ -62,7 +61,7 @@ class ApiController extends Controller
         if (chack_list::chack_full_list($ads_list, $my_data, $my_ad_data)) {
             return  "all ads bad";
         }
-
+        
         if (chack_list::chack_up_njeeb($ads_list, $my_data, $my_ad_data)) {
             //Ad price need to reduction
             proces::change_price($ads_list, $my_ad_data, $my_data);

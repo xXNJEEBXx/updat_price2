@@ -63,7 +63,7 @@ class chack_list extends Controller
         }
         return true;
     }
-
+//need to add more crutos
     static function chack_amount($my_data)
     {
         $min_amount_for_usdt = 0;
@@ -71,9 +71,14 @@ class chack_list extends Controller
         if ($my_data["fiat"] == "USD") {
             $min_amount_for_usdt = 100;
             $min_amount_for_BTC = 10;
-        } else {
+        }
+        if ($my_data["fiat"] == "SAR") {
             $min_amount_for_usdt = 60;
             $min_amount_for_BTC = 60;
+        }
+        if ($my_data["fiat"] == "BHD") {
+            $min_amount_for_usdt = 10;
+            $min_amount_for_BTC = 10;
         }
         echo $my_data["track_amount"]."\n";
         if ($my_data["asset"] == "USDT" || $my_data["asset"] == "BUSD") {
@@ -249,7 +254,6 @@ class chack_list extends Controller
     static function set_auto_amount($my_data)
     {
         $my_data = git_data::track_amount($my_data);
-        // $my_data["track_amount"] =$my_ad_data["initAmount"] * $my_data["orginal_price"];
         return $my_data;
     }
 

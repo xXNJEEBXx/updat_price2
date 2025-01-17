@@ -36,7 +36,8 @@ class track_controller extends Controller
         }
 
         //need to add black list
-        $my_payMethods=proces::git_all_paymethod();    
+
+        $my_payMethods=proces::git_all_paymethod($my_data);    
 
         if (chack_list::chack_ads($my_data, $ads_list, $my_payMethods)) {
             if (chack_list::chack_multiple_orders()) {
@@ -60,21 +61,13 @@ class track_controller extends Controller
             $track_table1->name = "track_amount";
             $track_table1->value = $my_data["amount"];
             $track_table1->save();
-            $track_table2 = new  status;
-            $track_table2->name = "track_price";
-            $track_table2->value = $my_data["price"];
-            $track_table2->save();
         } else {
             $track_table1 = status::where('name', "track_amount")->first();
             $track_table1->name = "track_amount";
             $track_table1->value = $my_data["amount"];
             $track_table1->save();
-            // $track_table2 = status::where('name', "track_price")->first();
-            // $track_table2->name = "track_price";
-            // $track_table2->value = $my_data["price"];
-            // $track_table2->save();
         }
-        return ["amount" => $track_table1->value/*, "price" => $track_table2->value*/];
+        return ["amount" => $track_table1->value];
     }
 
     public function post_track_status(Request $my_data)

@@ -63,10 +63,12 @@ class updatePrise extends Command
                 //["name" => "BUY BTC track", "price_multiplied" => 1.005, "asset" => "BTC", "fiat" => "USD", "track_type" => "good_dule", "max_amount" => 50, "buy_the_lowist" => true, "payTypes" => "Wise", "price_type" => "auto", "trade_type" => "BUY"],
                 //["name" => "BUY USDT track", "price_multiplied" => 1.005, "asset" => "USDT", "fiat" => "USD", "track_type" => "good_dule", "max_amount" => 1000, "buy_the_lowist" => true, "payTypes" => "Wise", "price_type" => "auto", "trade_type" => "BUY"],
                 //["name" => "BUY BUSD track", "price_multiplied" => 1.005, "asset" => "BUSD", "fiat" => "USD", "track_type" => "good_dule", "max_amount" => 100, "buy_the_lowist" => true, "payTypes" => "Wise", "price_type" => "auto", "trade_type" => "BUY"],
+                //["name" => "BUY USDT with BHD track", "price_multiplied" => 1, "asset" => "USDT", "fiat" => "BHD", "track_type" => "good_dule", "payTypes" => ["stcpay"],"periods"=>[15, 30],"countries"=>["SA"], "price_type" => "auto", "trade_type" => "BUY" ,"fiat_coverter_to_usd" => 0.379],
+                
                 // ---SELL
                 //["name" => "SELL BTC track", "price_multiplied" => 1.034, "asset" => "BTC", "fiat" => "USD", "track_type" => "good_dule", "payTypes" => "Wise", "price_type" => "auto", "trade_type" => "SELL"],
-                //["name" => "SELL BTC with SAR track", "price_multiplied" => 1.15, "asset" => "BTC", "fiat" => "SAR", "track_type" => "good_dule", "payTypes" => ["stcpay"],"periods"=>[15, 30],"countries"=>["SA"], "price_type" => "auto", "trade_type" => "SELL", "max_amount" => 70],
-               // ["name" => "SELL USDT with SAR track", "price_multiplied" => 1.03, "asset" => "USDT", "fiat" => "SAR", "track_type" => "good_dule", "payTypes" => ["stcpay"],"periods"=>[15, 30],"countries"=>["SA"], "price_type" => "auto", "trade_type" => "SELL", "max_amount" => 70],
+                //["name" => "SELL BTC with SAR track", "price_multiplied" => 1.15, "asset" => "BTC", "fiat" => "SAR", "track_type" => "good_dule", "payTypes" => ["stcpay"],"periods"=>[15, 30],"countries"=>["SA"], "price_type" => "auto", "trade_type" => "SELL", "max_amount" => 70 ,"fiat_coverter_to_usd" => 3.75],
+               // ["name" => "SELL USDT with SAR track", "price_multiplied" => 1.03, "asset" => "USDT", "fiat" => "SAR", "track_type" => "good_dule", "payTypes" => ["stcpay"],"periods"=>[15, 30],"countries"=>["SA"], "price_type" => "auto", "trade_type" => "SELL", "max_amount" => 70,"fiat_coverter_to_usd" => 3.75],
                 // ["name" => "SELL USDT track", "price_multiplied" => 1.013, "asset" => "USDT", "fiat" => "USD", "track_type" => "good_dule", "payTypes" => "Wise", "price_type" => "auto", "trade_type" => "SELL"],
 
 
