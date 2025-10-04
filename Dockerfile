@@ -1,5 +1,6 @@
 # Stage 1: Install PHP dependencies with Composer
-FROM composer:2.0 as vendor
+FROM php:8.2 as vendor
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 WORKDIR /app
 COPY database/ database/
 COPY composer.json composer.json
