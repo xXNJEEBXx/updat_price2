@@ -9,7 +9,7 @@ RUN composer install --no-interaction --no-dev --prefer-dist --optimize-autoload
 # Stage 2: Build frontend assets
 FROM node:18 as frontend
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json ./
 RUN npm install
 COPY . .
 RUN npm run build
