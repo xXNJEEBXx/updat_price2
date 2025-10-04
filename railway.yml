@@ -1,7 +1,0 @@
-build:
-  builder: heroku/buildpacks:22
-  buildpacks:
-    - heroku/php
-deploy:
-  startCommand: vendor/bin/heroku-php-apache2 public/
-  releaseCommand: php artisan migrate --force

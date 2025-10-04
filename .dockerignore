@@ -1,0 +1,16 @@
+.git
+.github
+.env
+.env.example
+.editorconfig
+.styleci.yml
+.gitattributes
+node_modules
+vendor
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*.log
+public/hot
+public/storage
+tests/
