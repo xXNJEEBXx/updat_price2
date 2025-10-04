@@ -1,5 +1,5 @@
 # Stage 1: Install PHP dependencies with Composer
-FROM composer/composer:2-php82 as vendor
+FROM composer:2.0 as vendor
 WORKDIR /app
 COPY database/ database/
 COPY composer.json composer.json
