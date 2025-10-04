@@ -1,6 +1,6 @@
 # Stage 1: Install PHP dependencies with Composer
 FROM php:8.2 as vendor
-RUN apt-get update && apt-get install -y unzip git && docker-php-ext-install zip
+RUN apt-get update && apt-get install -y unzip git libzip-dev && docker-php-ext-install zip
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 WORKDIR /app
 COPY database/ database/
