@@ -33,8 +33,9 @@ RUN apt-get update && apt-get install -y \
 # Copy Apache virtual host configuration
 COPY 000-default.conf /etc/apache2/sites-available/000-default.conf
 
-# Enable Apache rewrite module
-RUN a2enmod rewrite
+# Enable Apache rewrite module and set ServerName globally
+RUN a2enmod rewrite && \
+    echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
 # Copy application code and built assets
 COPY --chown=www-data:www-data . .
