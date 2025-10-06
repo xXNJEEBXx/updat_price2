@@ -12,7 +12,7 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install
 COPY . .
-RUN npm run build
+RUN npm run production
 
 # Stage 3: Create the production image
 FROM php:8.2-apache
