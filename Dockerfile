@@ -49,7 +49,13 @@ RUN php artisan package:discover --ansi
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Expose port 80 and start Apache
+# Copy startup script
+COPY start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
+
+# Expose port (Railway will assign dynamically)
 EXPOSE 80
-CMD ["apache2-foreground"]
+
+# Start Apache with dynamic port configuration
+CMD ["/usr/local/bin/start.sh"]
 
