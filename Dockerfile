@@ -3,10 +3,8 @@ FROM php:8.2 as vendor
 RUN apt-get update && apt-get install -y unzip git libzip-dev && docker-php-ext-install zip
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 WORKDIR /app
-COPY database/ database/
-COPY composer.json composer.json
-COPY composer.lock composer.lock
-RUN composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader
+COPY composer.json composer.lock ./
+RUN composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader --no-scripts
 
 # Stage 2: Build frontend assets
 FROM node:18 as frontend
@@ -42,6 +40,9 @@ RUN a2enmod rewrite
 COPY --chown=www-data:www-data . .
 COPY --chown=www-data:www-data --from=vendor /app/vendor/ ./vendor/
 COPY --chown=www-data:www-data --from=frontend /app/public/build ./public/build
+
+# Warm up Laravel's package manifest
+RUN php artisan package:discover --ansi
 
 # Set correct permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
