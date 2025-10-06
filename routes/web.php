@@ -14,7 +14,17 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    return response()->json([
+        'status' => 'ok',
+        'message' => 'UpdatePrice API is running',
+        'timestamp' => now()->toIso8601String(),
+        'php_version' => phpversion(),
+        'laravel_version' => app()->version()
+    ]);
+});
+
+Route::get('/health', function () {
+    return response()->json(['status' => 'healthy']);
 });
 
 // Route::get('/register', [ApiController::class, 'register' ]);
