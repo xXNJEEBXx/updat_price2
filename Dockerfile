@@ -39,7 +39,8 @@ RUN a2enmod rewrite
 # Copy application code and built assets
 COPY --chown=www-data:www-data . .
 COPY --chown=www-data:www-data --from=vendor /app/vendor/ ./vendor/
-COPY --chown=www-data:www-data --from=frontend /app/public/build ./public/build
+COPY --chown=www-data:www-data --from=frontend /app/public/js ./public/js
+COPY --chown=www-data:www-data --from=frontend /app/public/css ./public/css
 
 # Warm up Laravel's package manifest
 RUN php artisan package:discover --ansi
