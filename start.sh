@@ -23,9 +23,21 @@ fi
 php artisan config:clear
 php artisan config:cache
 
+# Ensure Laravel storage permissions are correct
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
 # Update Apache configuration with the actual PORT value
 sed -i "s/Listen 80/Listen $PORT/" /etc/apache2/ports.conf
 sed -i "s/<VirtualHost \*:80>/<VirtualHost *:$PORT>/" /etc/apache2/sites-available/000-default.conf
 
+# Test if PHP is working
+echo "[start.sh] Testing PHP..."
+php -v
+
+# Test if the health endpoint works
+echo "[start.sh] Testing health endpoint..."
+php /var/www/html/public/health.php
+
 # Start Apache
+echo "[start.sh] Starting Apache on port $PORT..."
 exec apache2-foreground

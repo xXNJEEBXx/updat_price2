@@ -62,8 +62,8 @@ RUN chmod -R 775 storage
 COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
-# Expose port (Railway will assign dynamically)
-EXPOSE 80
+# Railway will set PORT environment variable dynamically
+# No need to EXPOSE a specific port for Railway
 
 # Start Apache with dynamic port configuration
 CMD ["/usr/local/bin/start.sh"]
