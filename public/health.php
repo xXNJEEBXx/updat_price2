@@ -11,4 +11,3 @@ echo json_encode([
     'timestamp' => date('Y-m-d H:i:s'),
     'memory_usage' => memory_get_usage(true)
 ]);
-?>
