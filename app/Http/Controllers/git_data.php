@@ -17,39 +17,44 @@ use Carbon\Carbon;
 class git_data extends Controller
 {
 
-    static function catch_errors($callback)
+    static function catch_errors($callback, $maxRetries = 3, $sleepSeconds = 2, $deadlineSeconds = 20)
     {
-        do {
-            try {
-                $falg = false;
-                $res = $callback();
-            }
-            //catch exception
-            catch (QueryException $error) {
-                if (!isset($error_alarm)) {
-                    $error_alarm = true;
-                    echo "QueryException error \n";
-                }
-                $falg = true;
-                sleep(2);
-            } catch (ConnectionException $error) {
-                if (!isset($error_alarm)) {
-                    $error_alarm = true;
-                    echo "ConnectionExceptiong error \n";
-                }
-                $falg = true;
-                sleep(2);
-            } catch (RequestException $error) {
-                if (!isset($error_alarm)) {
-                    $error_alarm = true;
-                    echo "RequestException error \n";
-                }
-                $falg = true;
-                sleep(2);
-            }
-        } while ($falg);
+        $attempt = 0;
+        $start = microtime(true);
+        $lastException = null;
 
-        return $res;
+        while (true) {
+            try {
+                // Attempt the callback and return immediately on success
+                return $callback();
+            } catch (QueryException $error) {
+                $lastException = $error;
+                if (!isset($error_alarm)) {
+                    $error_alarm = true;
+                    echo "QueryException error\n";
+                }
+            } catch (ConnectionException $error) {
+                $lastException = $error;
+                if (!isset($error_alarm)) {
+                    $error_alarm = true;
+                    echo "ConnectionException error\n";
+                }
+            } catch (RequestException $error) {
+                $lastException = $error;
+                if (!isset($error_alarm)) {
+                    $error_alarm = true;
+                    echo "RequestException error\n";
+                }
+            }
+
+            $attempt++;
+            $elapsed = microtime(true) - $start;
+            if ($attempt > $maxRetries || $elapsed >= $deadlineSeconds) {
+                // Out of retries or time budget; surface the last exception
+                throw $lastException ?? new \RuntimeException('Upstream request failed');
+            }
+            sleep($sleepSeconds);
+        }
     }
     static function heders()
     {

@@ -298,7 +298,17 @@ binace name :" . $order["binace_name"] . " value :" . $order["value"] . " \nwise
 
     public function git_progress_task()
     {
-        return ["data" => self::git_progress_task_text()];
+        try {
+            // Hard timeout window to avoid hanging the HTTP response
+            $result = self::git_progress_task_text();
+            return ["data" => $result];
+        } catch (\Throwable $e) {
+            // Return a bounded error response so clients don't hang
+            return response()->json([
+                'error' => 'Upstream timeout',
+                'message' => $e->getMessage()
+            ], 504);
+        }
     }
 
     public function git_progress_task_text()
