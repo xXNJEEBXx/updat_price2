@@ -385,28 +385,54 @@ class git_data extends Controller
 
     static function git_track_data()
     {
+        try {
+            $data = self::catch_errors(function () {
+                return status::where('name', "track_amount")->first();
+            });
+        } catch (\Throwable $e) {
+            // Database unavailable or timed out; return sensible defaults
+            return [
+                "amount" => 0,
+                "note" => "db_unavailable"
+            ];
+        }
 
-        $data = self::catch_errors(function () {
-            return status::where('name', "track_amount")->first();
-        });
         if ($data == null) {
-            $track_table = new  status;
-            $track_table->name = "track_amount";
-            $track_table->value = 0;
-            self::catch_errors(function () use ($track_table) {
-                $track_table->save();
-            });
-            $track_table = new  status;
-            $track_table->name = "track_status";
-            $track_table->value = 0;
-            self::catch_errors(function () use ($track_table) {
-                $track_table->save();
-            });
+            // Attempt to initialize defaults, but don't fail if DB write is unavailable
+            try {
+                $track_table = new  status;
+                $track_table->name = "track_amount";
+                $track_table->value = 0;
+                self::catch_errors(function () use ($track_table) {
+                    $track_table->save();
+                });
+
+                $track_table = new  status;
+                $track_table->name = "track_status";
+                $track_table->value = 0;
+                self::catch_errors(function () use ($track_table) {
+                    $track_table->save();
+                });
+            } catch (\Throwable $e) {
+                // Ignore initialization failure on read-only/failed DB
+            }
+            return [
+                "amount" => 0
+            ];
         } else {
-            $data3 = self::catch_errors(function () {
-                return  status::where('name', "track_status")->first();
-            });
-            return ["amount" => $data["value"] /*"status" => $data3["value"]*/];
+            try {
+                $data3 = self::catch_errors(function () {
+                    return  status::where('name', "track_status")->first();
+                });
+                return [
+                    "amount" => $data["value"],
+                    // "status" => $data3["value"],
+                ];
+            } catch (\Throwable $e) {
+                return [
+                    "amount" => $data["value"]
+                ];
+            }
         }
     }
 
