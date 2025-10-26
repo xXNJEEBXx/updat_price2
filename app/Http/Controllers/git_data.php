@@ -17,44 +17,39 @@ use Carbon\Carbon;
 class git_data extends Controller
 {
 
-    static function catch_errors($callback, $maxRetries = 3, $sleepSeconds = 2, $deadlineSeconds = 20)
+    static function catch_errors($callback)
     {
-        $attempt = 0;
-        $start = microtime(true);
-        $lastException = null;
-
-        while (true) {
+        do {
             try {
-                // Attempt the callback and return immediately on success
-                return $callback();
-            } catch (QueryException $error) {
-                $lastException = $error;
+                $falg = false;
+                $res = $callback();
+            }
+            //catch exception
+            catch (QueryException $error) {
                 if (!isset($error_alarm)) {
                     $error_alarm = true;
-                    echo "QueryException error\n";
+                    echo "QueryException error \n";
                 }
+                $falg = true;
+                sleep(2);
             } catch (ConnectionException $error) {
-                $lastException = $error;
                 if (!isset($error_alarm)) {
                     $error_alarm = true;
-                    echo "ConnectionException error\n";
+                    echo "ConnectionExceptiong error \n";
                 }
+                $falg = true;
+                sleep(2);
             } catch (RequestException $error) {
-                $lastException = $error;
                 if (!isset($error_alarm)) {
                     $error_alarm = true;
-                    echo "RequestException error\n";
+                    echo "RequestException error \n";
                 }
+                $falg = true;
+                sleep(2);
             }
+        } while ($falg);
 
-            $attempt++;
-            $elapsed = microtime(true) - $start;
-            if ($attempt > $maxRetries || $elapsed >= $deadlineSeconds) {
-                // Out of retries or time budget; surface the last exception
-                throw $lastException ?? new \RuntimeException('Upstream request failed');
-            }
-            sleep($sleepSeconds);
-        }
+        return $res;
     }
     static function heders()
     {
@@ -67,30 +62,35 @@ class git_data extends Controller
     static function heders_for_regolar($cookies)
     {
         return [
-            'authority' => 'p2p.binance.com',
             'accept' => '*/*',
-            'accept-language' => 'ar,en-US;q=0.9,en;q=0.8,ar-SA;q=0.7,en-GB;q=0.6',
-            'bnc-uuid' => '678765ba-dc29-4e44-8f0d-a303a4fe3a63',
-            'c2ctype' => 'c2c_merchant',
+            'Accept-Encoding' => 'gzip, deflate, br,zstd',
+            'Accept-language' => 'en-SA,en;q=0.9,ar-SA;q=0.8,ar;q=0.7,en-GB;q=0.6,en-US;q=0.5',
+            'bnc-level' => '0',
+            'bnc-location' => 'BINANCE',
+            'bnc-time-zone' => 'Asia/Riyadh',
+            'bnc-uuid' => '2b86ccef-28d8-4675-b7d5-09c1a668a768',
+            'c2ctype' => 'c2c_web',
             'clienttype' => 'web',
             'content-type' => 'application/json',
             'cookie' => $cookies->cookies,
             'csrftoken' => $cookies->csrftoken,
-            'device-info' => 'eyJzY3JlZW5fcmVzb2x1dGlvbiI6IjE5MjAsMTA4MCIsImF2YWlsYWJsZV9zY3JlZW5fcmVzb2x1dGlvbiI6IjE5MjAsMTA0MCIsInN5c3RlbV92ZXJzaW9uIjoiV2luZG93cyAxMCIsImJyYW5kX21vZGVsIjoidW5rbm93biIsInN5c3RlbV9sYW5nIjoiYXIiLCJ0aW1lem9uZSI6IkdNVCszIiwidGltZXpvbmVPZmZzZXQiOi0xODAsInVzZXJfYWdlbnQiOiJNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvMTAwLjAuNDg5Ni42MCBTYWZhcmkvNTM3LjM2IiwibGlzdF9wbHVnaW4iOiJQREYgVmlld2VyLENocm9tZSBQREYgVmlld2VyLENocm9taXVtIFBERiBWaWV3ZXIsTWljcm9zb2Z0IEVkZ2UgUERGIFZpZXdlcixXZWJLaXQgYnVpbHQtaW4gUERGIiwiY2FudmFzX2NvZGUiOiJhNDBkZGEzMiIsIndlYmdsX3ZlbmRvciI6Ikdvb2dsZSBJbmMuIChOVklESUEpIiwid2ViZ2xfcmVuZGVyZXIiOiJBTkdMRSAoTlZJRElBLCBOVklESUEgR2VGb3JjZSBHVFggMTA2MCA2R0IgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSkiLCJhdWRpbyI6IjEyNC4wNDM0NzUyNzUxNjA3NCIsInBsYXRmb3JtIjoiV2luMzIiLCJ3ZWJfdGltZXpvbmUiOiJBc2lhL1JpeWFkaCIsImRldmljZV9uYW1lIjoiQ2hyb21lIFYxMDAuMC40ODk2LjYwIChXaW5kb3dzKSIsImZpbmdlcnByaW50IjoiNzhhYjQ0MjRiMDQ4M2MwNmU4M2Q5NjcyNWIxODBjYzkiLCJkZXZpY2VfaWQiOiIiLCJyZWxhdGVkX2RldmljZV9pZHMiOiIifQ==',
-            'fvideo-id' => '324abb49409eabdba08ffeb52bcdcdcde24728f7',
+            'device-info' => 'eyJzY3JlZW5fcmVzb2x1dGlvbiI6IjE5MjAsMTA4MCIsImF2YWlsYWJsZV9zY3JlZW5fcmVzb2x1dGlvbiI6IjE5MjAsMTAzMiIsInN5c3RlbV92ZXJzaW9uIjoiV2luZG93cyAxMCIsImJyYW5kX21vZGVsIjoidW5rbm93biIsInN5c3RlbV9sYW5nIjoiZW4tU0EiLCJ0aW1lem9uZSI6IkdNVCswMzowMCIsInRpbWV6b25lT2Zmc2V0IjotMTgwLCJ1c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEzMi4wLjAuMCBTYWZhcmkvNTM3LjM2IiwibGlzdF9wbHVnaW4iOiJDaHJvbWUgUERGIFBsdWdpbizigKpDaHJvbWUgUERGIFZpZXdlcuKArCIsImNhbnZhc19jb2RlIjoiMDcwYThkMzEiLCJ3ZWJnbF92ZW5kb3IiOiJHb29nbGUgSW5jLiAoSW50ZWwpIiwid2ViZ2xfcmVuZGVyZXIiOiJBTkdMRSAoSW50ZWwsIEludGVsKFIpIElyaXMoUikgWGUgR3JhcGhpY3MgKDB4MDAwMDQ2QTYpIERpcmVjdDNEMTEgdnNfNV8wIHBzXzVfMCwgRDNEMTEpIiwiYXVkaW8iOiIxMjQuMDQzNDc1Mjc1MTYwNzQiLCJwbGF0Zm9ybSI6IldpbjMyIiwid2ViX3RpbWV6b25lIjoiQXNpYS9SaXlhZGgiLCJkZXZpY2VfbmFtZSI6IkNocm9tZSBWMTMyLjAuMC4wIChXaW5kb3dzKSIsImZpbmdlcnByaW50IjoiMzM4ODIzMDljMGU4ODM1MDQwYWI5ZTEzNTRhNmZjNmEiLCJkZXZpY2VfaWQiOiIiLCJyZWxhdGVkX2RldmljZV9pZHMiOiIifQ==',
+            'fvideo-id' => '33805112e4dca9e1808831828837c07884a9aee0',
+            'fvideo-token' => 'mlmfN2imN0/XfNXKXe6dDf0zCP8DELgIELk5CBpfYfJw2Fb93o4wBuqGLUJ2jIAvnEkDXwMttwzUFwPxJ9ZKbgKL9QKy4eGC8UKqMBUkPqU0IPaZsJb2otGruy+7TshZmhLREAkC0u+dF6gOpQMlpvbDMuyBmnQ+Q0vUv7uDapEVHyaNTOh0Kx91t36AwnA9w=71',
             'lang' => 'ar',
-            'origin' => 'https://p2p.binance.com',
-            'referer' => 'https://p2p.binance.com/ar/myads',
-            'sec-ch-ua' => '" Not A;Brand";v="99", "Chromium";v="100", "Google Chrome";v="100"',
+            'origin' => 'https://www.binance.com',
+            'priority' => 'u=1, i',
+            'referer' => 'https://p2p.binance.com/ar/advEdit?code=12704852398681194496',
+            'sec-ch-ua' => '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
             'sec-ch-ua-mobile' => '?0',
             'sec-ch-ua-platform' => '"Windows"',
             'sec-fetch-dest' => 'empty',
             'sec-fetch-mode' => 'cors',
             'sec-fetch-site' => 'same-origin',
-            'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.60 Safari/537.36',
-            'x-trace-id' => 'ee96a687-d600-4fa3-bc1c-a674b88ad426',
-            'x-ui-request-trace' => 'ee96a687-d600-4fa3-bc1c-a674b88ad426'
-        ];;
+            'x-passthrough-token' => '',
+            'x-trace-id' => 'c490c8b0-73b0-4f8d-8a56-3e6012212abb',
+            'x-ui-request-trace' => 'c490c8b0-73b0-4f8d-8a56-3e6012212abb'
+        ];
     }
     static function heders_for_convert($cookies)
     {
@@ -155,10 +155,30 @@ class git_data extends Controller
         if (isset($my_data["countries"]) > 0) {
             $countries = $my_data["countries"];
         }
-        $ads_list = self::catch_errors(function () use (&$payTypes, &$my_data, &$periods, &$countries) {
-            return  Http::withHeaders(self::heders())->post("https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search", ["additionalKycVerifyFilter" => 0, "asset" => $my_data["asset"], "assetClassifies" => ["mass", "profession", "fiat_trade"], "countries" => $countries, "fiat" => $my_data["fiat"], "filterType" => "all", "page" => 1, "payTypes" => $payTypes, "periods" => $periods, "proMerchantAds" => false, "publisherType" => null, "rows" => 10, "shieldMerchantAds" => false, "tradeType" => $my_data["trade_type"]]);
-        });
 
+        $paylode = [
+            "additionalKycVerifyFilter" => 0,
+            "asset" => $my_data["asset"],
+            "assetClassifies" => ["mass", "profession", "fiat_trade"],
+            "countries" => $countries,
+            "fiat" => $my_data["fiat"],
+            "filterType" => "all",
+            "page" => 1,
+            "payTypes" => $payTypes,
+            "periods" => $periods,
+            "proMerchantAds" => false,
+            "publisherType" => null,
+            "rows" => 10,
+            "shieldMerchantAds" => false,
+            "tradeType" => $my_data["trade_type"]
+        ];
+        if (isset($my_data["search_amount"])) {
+            //add it to the paylode
+            $paylode["transAmount"] = $my_data["search_amount"];
+        }
+        $ads_list = self::catch_errors(function () use (&$paylode) {
+            return  Http::withHeaders(self::heders())->post("https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search", $paylode);
+        });
         return $ads_list["data"];
     }
     static function get_search_paytyps_list($my_data)
@@ -187,10 +207,11 @@ class git_data extends Controller
 
     static function change_price_req($enemy_ad, $my_ad_data, $my_data)
     {
-        print_r(self::paylode_for_change_price($enemy_ad, $my_ad_data, $my_data));
+        //print_r(self::paylode_for_change_price($enemy_ad, $my_ad_data, $my_data));
         $res = self::catch_errors(function () use ($enemy_ad, $my_ad_data, $my_data) {
             return  Http::withHeaders(self::heders())->post("https://p2p.binance.com/bapi/c2c/v3/private/c2c/adv/update", self::paylode_for_change_price($enemy_ad, $my_ad_data, $my_data));
         });
+        return $res;
         return "ok";
     }
 
@@ -214,7 +235,11 @@ class git_data extends Controller
 
     static function new_price($my_data, $enemy_ad)
     {
-        return $enemy_ad["adv"]["price"] + proces::difference_value($my_data);
+        if (isset($my_data["max_price"]) && (($enemy_ad["adv"]["price"] + proces::difference_value($my_data)) > $my_data["max_price"])) {
+            return $my_data["max_price"];
+        } else {
+            return $enemy_ad["adv"]["price"] + proces::difference_value($my_data);
+        }
     }
     static function make_my_ad_paymetods($my_data)
     {
@@ -237,11 +262,171 @@ class git_data extends Controller
         }
         return $list;
     }
+
+    static function make_my_ad_autorereply($my_data, $my_ad_data, $tradeMethods)
+    {
+
+        if ($my_data["trade_type"] == "SELL" && $my_data["fiat"] == "SAR") {
+            $paymethods_text = "";
+            //مهم للأسماء العربية
+            $paymethod_info = [
+                [
+                    "Pay_type_id" => "15650098",
+                    "name" => "stcpay",
+                    "iban" => "0568199827"
+                ],
+                [
+                    "Pay_type_id" => "21248223",
+                    "name" => "urpay",
+                    "iban" => "0568199827"
+                ],
+                [
+                    "Pay_type_id" => "19798644",
+                    "name" => "بنك الراجحي",
+                    "iban" => "SA2780000603608016054034",
+                    "account" => "603000010006086054034"
+                ],
+                [
+                    "Pay_type_id" => "60138781",
+                    "name" => "(برق)البنك العربي",
+                    "iban" => "SA6330100991100010908171",
+                    "account" => "991100010908171",
+                    "Phone number" => "0568199827"
+                ],
+                [
+                    "Pay_type_id" => "19799220",
+                    "name" => "البنك الأهلي",
+                    "iban" => "SA8510000011100031628905",
+                    "account" => "11100031628905"
+                ],
+                [
+                    "Pay_type_id" => "60100956",
+                    "name" => "بنك الإنماء",
+                    "iban" => "SA1405000068202380899000",
+                    "account" => "68202380899000"
+                ],
+                [
+                    "Pay_type_id" => "31135839",
+                    "name" => "بنك الرياض",
+                    "iban" => "SA6520000003405432679940",
+                    "account" => "3405432679940"
+                ],
+                [
+                    "Pay_type_id" => "15650064",
+                    "name" => "(ساب)البنك الأول",
+                    "iban" => "SA2445000000053431060001",
+                    "account" => "053-431060-001"
+                ],
+                [
+                    "Pay_type_id" => "62763789",
+                    "name" => "البنك الفرنسي",
+                    "iban" => "SA82550000000G1799300134",
+                    "account" => "G1799300134"
+                ],
+                [
+                    "Pay_type_id" => "62763983",
+                    "name" => "بنك الجزيرة",
+                    "iban" => "SA9260100002581976860001",
+                    "account" => "002581976860001"
+                ],
+                [
+                    "Pay_type_id" => "65846347",
+                    "name" => "البنك السعودي للإستثمار",
+                    "iban" => "SA0965000000323G49196001",
+                    "account" => "0323G49196001"
+                ],
+                [
+                    "Pay_type_id" => "65846412",
+                    "name" => "بنك D360",
+                    "iban" => "SA8036036036024042334128",
+                    "Phone number" => "0568199827"
+                ],
+                [
+                    "Pay_type_id" => "65859999",
+                    "name" => "بنك NEO(نيوم)",
+                    "iban" => "SA6810000062300047296904"
+                ],
+                [
+                    "Pay_type_id" => "65989120",
+                    "name" => "بنك البلاد(Mobile pay)",
+                    "iban" => "SA2515134018964015995602"
+                ],
+                [
+                    "Pay_type_id" => "65845789",
+                    "name" => "بنك الإنماء(الإنماء pay)",
+                    "iban" => "SA4905012000000111023155"
+                ],
+                [
+                    "Pay_type_id" => "65846105",
+                    "name" => "(تيكمو)البنك العربي",
+                    "iban" => "SA9130100974016908619892"
+                ],
+                [
+                    "Pay_type_id" => "65846159",
+                    "name" => "(تيلي موني)البنك العربي",
+                    "iban" => "SA9030400197084969560015"
+                ],
+                [
+                    "Pay_type_id" => "65846458",
+                    "name" => "بنك ميم",
+                    "iban" => "SA2590000000029900686271"
+                ],
+                [
+                    "Pay_type_id" => "67115166",
+                    "name" => "بنك دبي الإمارات الوطني",
+                    "iban" => "SA6095000001019011411602",
+                    "account" => "1019011411602"
+                ],
+                [
+                    "Pay_type_id" => "67115380",
+                    "name" => "(HALA)البنك العربي",
+                    "iban" => "SA5930100949000003090111"
+                ]
+            ];
+            foreach ($tradeMethods as $tradeMethod) {
+                foreach ($paymethod_info as $item) {
+                    if ($tradeMethod["payMethodId"] == $item["Pay_type_id"]) {
+                        $paymethods_text .= $item["name"] . "\n";
+                        if (isset($item["iban"])) {
+                            $paymethods_text .= $item["iban"] . "\n";
+                        }
+                        if (isset($item["account"])) {
+                            $paymethods_text .= "رقم حساب " . $item["name"] . "\n";
+                            $paymethods_text .= $item["account"] . "\n";
+                        }
+                        if (isset($item["Phone number"])) {
+                            $paymethods_text .= "رقم جوال " . $item["name"] . "\n";
+                            $paymethods_text .= $item["Phone number"] . "\n";
+                        }
+                        $paymethods_text .= "\n";
+                    }
+                }
+            }
+
+            $autorereply = "السلام عليكم ورحمة الله وبركاته\n\n"
+                . "ارجو قراءة تعليمات التحويل\n"
+                . "لو تكرمت لا تضع سبب التحويل مشتريات تفادياً لتجميد الحساب 💥 حواله شخصيه لو سمحت 💥 لا تضف أي وصف أو ملاحظات أثناء التحويل.\n"
+                . "ارجوا منك التكرم بترك تعليق طيب 😘😘\n"
+                . "ارجو استخدام النسخ في نقل بيانات التحويل لضمان عدم حصول اخطاء ❤️🌹\n"
+                . "بعد التحويل، يرجى إرسال صورة الإيصال.\n"
+                . "اذا حولت الفلوس وما رديت عليك فضلا تواصل مع الرقم 0568199827\n\n\n"
+                . "طرق التحويل\n\n"
+                . "الإسم:نجيب مرتضى الموسوي\n\n"
+                . $paymethods_text;
+        } else {
+            $autorereply = $my_ad_data["autoReplyMsg"];
+        }
+
+        return $autorereply;
+    }
+
     static function paylode_for_change_price($enemy_ad, $my_ad_data, $my_data)
     {
         //$initAmount=self::total_initAmount($enemy_ad, $my_ad_data, $my_data);
         $initAmount = $my_ad_data["initAmount"];
         $tradeMethods = self::make_my_ad_paymetods($my_data);
+        $autorereply = self::make_my_ad_autorereply($my_data, $my_ad_data, $tradeMethods);
+
 
         $paylode = [
             "adAdditionalKycVerifyItems" => $my_ad_data["adAdditionalKycVerifyItems"],
@@ -250,7 +435,7 @@ class git_data extends Controller
             "advStatus" => $my_ad_data["advStatus"],
             "assetScale" => $my_ad_data["assetScale"],
             "asset" => $my_ad_data["asset"],
-            "autoReplyMsg" => $my_ad_data["autoReplyMsg"],
+            "autoReplyMsg" => $autorereply,
             "buyerBtcPositionLimit" => $my_ad_data["buyerBtcPositionLimit"],
             "buyerRegDaysLimit" => $my_ad_data["buyerRegDaysLimit"],
             "classify" => $my_ad_data["classify"],
@@ -385,54 +570,28 @@ class git_data extends Controller
 
     static function git_track_data()
     {
-        try {
-            $data = self::catch_errors(function () {
-                return status::where('name', "track_amount")->first();
-            });
-        } catch (\Throwable $e) {
-            // Database unavailable or timed out; return sensible defaults
-            return [
-                "amount" => 0,
-                "note" => "db_unavailable"
-            ];
-        }
 
+        $data = self::catch_errors(function () {
+            return status::where('name', "track_amount")->first();
+        });
         if ($data == null) {
-            // Attempt to initialize defaults, but don't fail if DB write is unavailable
-            try {
-                $track_table = new  status;
-                $track_table->name = "track_amount";
-                $track_table->value = 0;
-                self::catch_errors(function () use ($track_table) {
-                    $track_table->save();
-                });
-
-                $track_table = new  status;
-                $track_table->name = "track_status";
-                $track_table->value = 0;
-                self::catch_errors(function () use ($track_table) {
-                    $track_table->save();
-                });
-            } catch (\Throwable $e) {
-                // Ignore initialization failure on read-only/failed DB
-            }
-            return [
-                "amount" => 0
-            ];
+            $track_table = new  status;
+            $track_table->name = "track_amount";
+            $track_table->value = 0;
+            self::catch_errors(function () use ($track_table) {
+                $track_table->save();
+            });
+            $track_table = new  status;
+            $track_table->name = "track_status";
+            $track_table->value = 0;
+            self::catch_errors(function () use ($track_table) {
+                $track_table->save();
+            });
         } else {
-            try {
-                $data3 = self::catch_errors(function () {
-                    return  status::where('name', "track_status")->first();
-                });
-                return [
-                    "amount" => $data["value"],
-                    // "status" => $data3["value"],
-                ];
-            } catch (\Throwable $e) {
-                return [
-                    "amount" => $data["value"]
-                ];
-            }
+            $data3 = self::catch_errors(function () {
+                return  status::where('name', "track_status")->first();
+            });
+            return ["amount" => $data["value"] /*"status" => $data3["value"]*/];
         }
     }
 
@@ -447,16 +606,22 @@ class git_data extends Controller
     static function orginal_price($my_data)
     {
 
-        $data = self::catch_errors(function () {
-            return Http::withHeaders(self::heders())->get("https://www.binance.com/bapi/composite/v1/public/marketing/symbol/list");
-        });
-        foreach ($data["data"] as $element) {
-            if ($element["name"] == $my_data["asset"]) {
-                $element["price"] = $element["price"] * $my_data["fiat_coverter_to_usd"];
-                $my_data["price"] = $element["price"] * $my_data["price_multiplied"];
-                $my_data["orginal_price"] = $element["price"];
+        do {
+            $data = self::catch_errors(function () {
+                return Http::withHeaders(self::heders())->get("https://www.binance.com/bapi/composite/v1/public/marketing/symbol/list");
+            });
+            foreach ($data["data"] as $element) {
+                if ($element["name"] == $my_data["asset"]) {
+                    $element["price"] = $element["price"] * $my_data["fiat_coverter_to_usd"];
+                    $my_data["price"] = $element["price"] * $my_data["price_multiplied"];
+                    $my_data["orginal_price"] = $element["price"];
+                }
             }
-        }
+            if (!isset($my_data["price"])) {
+                echo "error in orginal_price\n";
+            }
+        } while (!isset($my_data["price"]));
+
         return  $my_data;
     }
 
@@ -474,8 +639,6 @@ class git_data extends Controller
 
     static function open_order_req($my_data, $traked_ad, $my_payMethods)
     {
-
-        print_r($traked_ad);
         print_r(self::paylode_for_open_order($my_data, $traked_ad, $my_payMethods));
         self::catch_errors(function () use ($my_data, $traked_ad, $my_payMethods) {
             Http::withHeaders(self::heders())->post("https://p2p.binance.com/bapi/c2c/v3/private/c2c/order-match/placeOrder", self::paylode_for_open_order($my_data, $traked_ad, $my_payMethods));
@@ -526,18 +689,14 @@ class git_data extends Controller
 
     static function pay_methed($my_data, $traked_ad, $my_payMethods)
     {
-        // foreach ($traked_ad["adv"]["tradeMethods"] as $pay_methed) {
-        //     foreach ($my_data["payTypes"] as $payType) {
-        //         if ($pay_methed["identifier"] == $payType) {
-        //             if ($my_data["trade_type"] == "SELL") {
-        //                 if ($pay_methed["identifier"] == "Wise") {
-        //                     $pay_methed["payId"] = 33677319;
-        //                 }
-        //             }
-        //             return $pay_methed;
-        //         }
-        //     }
-        // }
+        if ($my_data["fiat"] == "BHD") {
+            foreach ($traked_ad["adv"]["tradeMethods"] as $pay_methed) {
+                if ($pay_methed["identifier"] == "BENEFITPAY") {
+                    return $pay_methed;
+                }
+            }
+        }
+
         foreach ($traked_ad["adv"]["tradeMethods"] as $payMethod) {
             foreach ($my_payMethods as $my_payMethod) {
                 foreach ($my_payMethod["supported_paymethod"] as $supported_paymethod) {
@@ -673,18 +832,19 @@ class git_data extends Controller
     static function full_orders($orderStatusList, $tradetype)
     {
         $GMT_time = time() - (3600 * 3);
-        $end_time = (((($GMT_time - ($GMT_time % 86400)) + 86400 * 1) - (3600 * 3)) * 1000) - 1;
+        $end_time = (((($GMT_time - ($GMT_time % 86400)) + 86400 * 1)) * 1000) - 1;
         $start_time = (($end_time + 1) - 86400 * 1000);
         $carbon = Carbon::createFromTimestamp($start_time / 1000);
         $start_time = $carbon->subMonths(3);
         $start_time = strtotime($start_time) * 1000;
-        $paylode = ["page" => 1, "rows" => 10, "orderStatusList" => $orderStatusList, "startDate" => $start_time, "endDate" => $end_time];
+        $paylode = ["downloadFormat" => 1, "endDate" => $end_time, "orderStatusList" => $orderStatusList, "page" => 1, "rows" => 8, "startDate" => $start_time];
         if ($tradetype != "all orders") {
             $paylode = array_merge($paylode, ["tradeType" => $tradetype]);
         }
+
         $full_orders = self::catch_errors(function () use ($paylode) {
 
-            return Http::withHeaders(self::heders())->post("https://p2p.binance.com/bapi/c2c/v1/private/c2c/order-match/order-list-archived-involved", $paylode);
+            return Http::withHeaders(self::heders())->post("https://p2p.binance.com/bapi/c2c/v2/private/c2c/order-match/order-list", $paylode);
         });
         return $full_orders["data"];
     }
@@ -738,7 +898,7 @@ class git_data extends Controller
 
         return $ad_info["data"]["buyerName"];
     }
-    // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ convert asset @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+    // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ convert asset @@@@@@@@@@@@@@@@@@@
 
     static function get_assets($my_data)
     {
@@ -794,5 +954,63 @@ class git_data extends Controller
             return Http::withHeaders(["X-CMC_PRO_API_KEY" => "69ef9c0d-2c54-4b6f-a447-0ae6f410824b"])->get("https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC,ETH,LTC,XRP,EOS,ADA,DOT,SOL,UNI,LINK,DOGE,BNB,AVAX,MATIC,ATOM,NEAR,ALGO,TRX,FTM,XLM,MANA,ICP,SAND,VET,XTZ,FIL,EGLD,AXS,KLAY,HNT,THETA&convert=USD");
         });
         return $data["data"];
+    }
+
+    /**
+     * Update payment methods for an advertisement in Binance
+     * @param array $ads_data The advertisement data response
+     * @param array $my_data The user configuration data
+     * @param array $my_payMethods Available payment methods
+     * @return mixed Response from the Binance API
+     */
+    static function update_ad_paymethods($my_ad_data, $my_data)
+    {
+
+        // Create payload for update request
+        $tradeMethods = self::make_my_ad_paymetods($my_data);
+        $autorereply = self::make_my_ad_autorereply($my_data, $my_ad_data, $tradeMethods);
+
+        // Prepare payload using existing ad data
+        $paylode = [
+            "adAdditionalKycVerifyItems" => $my_ad_data["adAdditionalKycVerifyItems"],
+            "adTags" => [],
+            "advNo" => $my_ad_data["advNo"],
+            "advStatus" => $my_ad_data["advStatus"],
+            "assetScale" => $my_ad_data["assetScale"],
+            "asset" => $my_ad_data["asset"],
+            "autoReplyMsg" => $autorereply,
+            "buyerBtcPositionLimit" => $my_ad_data["buyerBtcPositionLimit"],
+            "buyerRegDaysLimit" => $my_ad_data["buyerRegDaysLimit"],
+            "classify" => $my_ad_data["classify"],
+            "fiatScale" => $my_ad_data["fiatScale"],
+            "fiatUnit" => $my_ad_data["fiatUnit"],
+            "initAmount" => $my_ad_data["initAmount"],
+            "isSafePayment" => $my_ad_data["isSafePayment"],
+            "launchCountry" => $my_ad_data["launchCountry"],
+            "maxSingleTransAmount" => $my_ad_data["maxSingleTransAmount"],
+            "minSingleTransAmount" => $my_ad_data["minSingleTransAmount"],
+            "onlineDelayTime" => 0,
+            "onlineNow" => true,
+            "payTimeLimit" => $my_ad_data["payTimeLimit"],
+            "price" => $my_ad_data["price"],
+            "priceFloatingRatio" => $my_ad_data["priceFloatingRatio"],
+            "priceScale" => $my_ad_data["priceScale"],
+            "priceType" => $my_ad_data["priceType"],
+            "remarks" => $my_ad_data["remarks"],
+            "takerAdditionalKycRequired" => $my_ad_data["takerAdditionalKycRequired"],
+            "tradeMethods" => $tradeMethods,
+            "tradeType" => $my_ad_data["tradeType"],
+            "visible" => 1,
+        ];
+
+        // Send update request to Binance
+        $response = self::catch_errors(function () use ($paylode) {
+            return Http::withHeaders(self::heders())->post(
+                "https://p2p.binance.com/bapi/c2c/v3/private/c2c/adv/update",
+                $paylode
+            );
+        });
+
+        return $response;
     }
 }

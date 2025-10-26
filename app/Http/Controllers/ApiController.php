@@ -26,9 +26,9 @@ class ApiController extends Controller
         if ($ads_data->status() !== 200) {
             return "You need to log in";
         }
-        
-        $my_payMethods=proces::git_all_paymethod($my_data);    
-        $my_data["payTypes"]=$my_payMethods;
+
+        $my_payMethods = proces::git_all_paymethod($my_data);
+        $my_data["payTypes"] = $my_payMethods;
         $ads_list = git_data::ads_list($my_data);
 
 
@@ -37,8 +37,8 @@ class ApiController extends Controller
         $my_data = chack_list::set_auto_price($my_data);
 
         $my_data = proces::add_defult_ad_amount($my_data, $my_ad_data, $ads_list);
-        $my_data = chack_list::set_amount_for_ads($my_data,$my_ad_data);
-      // $my_data = proces::add_crupto_amount($my_data, $my_ad_data);
+        $my_data = chack_list::set_amount_for_ads($my_data, $my_ad_data);
+        // $my_data = proces::add_crupto_amount($my_data, $my_ad_data);
 
         if (chack_list::chack_ad_status($my_ad_data)) {
             return  "ad is turn off in binance";
@@ -54,14 +54,14 @@ class ApiController extends Controller
             return  "ad out of amount";
         }
 
-        if (chack_list::chack_min($my_data,$my_ad_data)) {
+        if (chack_list::chack_min($my_data, $my_ad_data)) {
             return  "min amount is biger then the amount";
         }
 
         if (chack_list::chack_full_list($ads_list, $my_data, $my_ad_data)) {
             return  "all ads bad";
         }
-        
+
         if (chack_list::chack_up_njeeb($ads_list, $my_data, $my_ad_data)) {
             //Ad price need to reduction
             proces::change_price($ads_list, $my_ad_data, $my_data);

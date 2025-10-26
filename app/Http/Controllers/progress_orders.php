@@ -48,8 +48,6 @@ class progress_orders extends Controller
             $order["status"] = 1;
             proces::update_orders_status($order);
         }
-        //num 8 is for the orders that are sell and just print messge then num 9 just wait the method below  mark it as paid num 10 send the telgram massge num 11 waited your confirm on telgram then num   
-        //chack if thare is orders just updated and mark it from 9 to 10
         proces::chack_if_thare_is_orders_just_updated($progress_orders, $finshed_progress_orders);
         //chack transactions if they take more than 15 minites
         self::chack_transactions();
@@ -298,17 +296,7 @@ binace name :" . $order["binace_name"] . " value :" . $order["value"] . " \nwise
 
     public function git_progress_task()
     {
-        try {
-            // Hard timeout window to avoid hanging the HTTP response
-            $result = self::git_progress_task_text();
-            return ["data" => $result];
-        } catch (\Throwable $e) {
-            // Return a bounded error response so clients don't hang
-            return response()->json([
-                'error' => 'Upstream timeout',
-                'message' => $e->getMessage()
-            ], 504);
-        }
+        return ["data" => self::git_progress_task_text()];
     }
 
     public function git_progress_task_text()
