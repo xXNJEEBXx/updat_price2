@@ -33,6 +33,9 @@ RUN apt-get update && apt-get install -y \
 # Copy Apache virtual host configuration
 COPY 000-default.conf /etc/apache2/sites-available/000-default.conf
 
+# Disable mpm_event and enable mpm_prefork (required for mod_php)
+RUN a2dismod mpm_event && a2enmod mpm_prefork
+
 # Enable Apache rewrite module and set ServerName globally
 RUN a2enmod rewrite && \
     echo "ServerName localhost" >> /etc/apache2/apache2.conf
