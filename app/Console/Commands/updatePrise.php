@@ -53,7 +53,7 @@ class updatePrise extends Command
                 //--------------choce_best_price-------------------
                 //---sell
                 //["name" => "SELL BTC AD with SAR", "price_multiplied" => 1.06, "max_price_multiplied" => 1.08, "id" => "12704852398681194496", "price_type" => "auto", "asset" => "BTC", "fiat" => "SAR", "track_type" => "choce_best_price", "trade_type" => "SELL", "fiat_coverter_to_usd" => 3.75],
-                ["name" => "SELL USD AD with SAR", "price_multiplied" => 1.06, "id" => "12815736385574313984", "track_type" => "paymethods_change", "fiat" => "SAR", "asset" => "USDT", "trade_type" => "SELL", "price_type" => "auto", "fiat_coverter_to_usd" => 3.75],
+                ["name" => "SELL USD AD with SAR", "price_multiplied" => 1.06, "id" => "12840426860199542784", "track_type" => "paymethods_change", "fiat" => "SAR", "asset" => "USDT", "trade_type" => "SELL", "price_type" => "auto", "fiat_coverter_to_usd" => 3.75],
 
                 //---BUY
 

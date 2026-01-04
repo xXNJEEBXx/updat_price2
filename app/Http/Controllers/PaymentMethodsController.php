@@ -12,6 +12,30 @@ use App\Http\Controllers\git_data;
 class PaymentMethodsController extends Controller
 {
     /**
+     * Reset all payment methods usage count to 0.
+     */
+    public function resetUsageCount()
+    {
+        try {
+            // Update all records in paymethods table
+            $updatedRows = paymethod::query()->update(['number_of_use' => '0']);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'All payment methods usage count reset to 0 successfully',
+                'updated_records' => $updatedRows
+            ], 200);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to reset usage count',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Update local payment methods list by comparing with Binance remote methods.
      */
     public function changepaymethods($my_data)

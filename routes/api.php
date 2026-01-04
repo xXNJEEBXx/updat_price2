@@ -58,6 +58,9 @@ Route::post('/update_transactions', 'progress_orders@update_transactions');
 //track price system
 Route::get('/get_prices', 'ApiController@get_crupto_pricec_from_marketcup');
 
+// Payment methods management
+Route::post('/reset-usage-count', 'PaymentMethodsController@resetUsageCount');
+
 
 
 
