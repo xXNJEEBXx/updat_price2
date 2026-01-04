@@ -8,7 +8,7 @@
         "startCommand": "/bin/bash /var/www/html/start.sh",
         "restartPolicyType": "ON_FAILURE",
         "restartPolicyMaxRetries": 10,
-        "healthcheckPath": "/health.php",
-        "healthcheckTimeout": 300
+        "healthcheckPath": "/simple-health.php",
+        "healthcheckTimeout": 600
     }
 }

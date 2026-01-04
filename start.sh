@@ -37,11 +37,20 @@ sed -i "s/<VirtualHost \*:80>/<VirtualHost *:$PORT>/" /etc/apache2/sites-availab
 echo "[start.sh] Testing PHP..."
 php -v
 
-# Test if the health endpoint works
+echo "[start.sh] Configuration complete. Starting Apache..."
+
+# Start Apache in background first
+apache2-foreground &
+APACHE_PID=$!
+
+# Wait a bit for Apache to start
+sleep 5
+
+# Test if the health endpoint works after Apache starts
 echo "[start.sh] Testing health endpoint..."
 php /var/www/html/public/health.php
 
-echo "[start.sh] Configuration complete. Starting Apache..."
+echo "[start.sh] Apache started successfully with PID $APACHE_PID"
 
-# Start Apache in foreground
-exec apache2-foreground
+# Wait for Apache process
+wait $APACHE_PID
