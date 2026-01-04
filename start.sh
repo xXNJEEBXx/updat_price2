@@ -4,6 +4,8 @@ set -e
 # Use Railway's PORT or default to 80
 export PORT="${PORT:-80}"
 
+echo "[start.sh] Starting application on port $PORT..."
+
 # Ensure we are in the application directory
 cd /var/www/html
 
@@ -24,9 +26,10 @@ php artisan config:clear
 php artisan config:cache
 
 # Ensure Laravel storage permissions are correct
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
 
 # Update Apache configuration with the actual PORT value
+echo "[start.sh] Configuring Apache to listen on port $PORT..."
 sed -i "s/Listen 80/Listen $PORT/" /etc/apache2/ports.conf
 sed -i "s/<VirtualHost \*:80>/<VirtualHost *:$PORT>/" /etc/apache2/sites-available/000-default.conf
 
@@ -38,6 +41,7 @@ php -v
 echo "[start.sh] Testing health endpoint..."
 php /var/www/html/public/health.php
 
-# Start Apache
-echo "[start.sh] Starting Apache on port $PORT..."
+echo "[start.sh] Configuration complete. Starting Apache..."
+
+# Start Apache in foreground
 exec apache2-foreground
