@@ -17,39 +17,44 @@ use Carbon\Carbon;
 class git_data extends Controller
 {
 
-    static function catch_errors($callback)
+    static function catch_errors($callback, $maxRetries = 3, $sleepSeconds = 2, $deadlineSeconds = 20)
     {
-        do {
-            try {
-                $falg = false;
-                $res = $callback();
-            }
-            //catch exception
-            catch (QueryException $error) {
-                if (!isset($error_alarm)) {
-                    $error_alarm = true;
-                    echo "QueryException error \n";
-                }
-                $falg = true;
-                sleep(2);
-            } catch (ConnectionException $error) {
-                if (!isset($error_alarm)) {
-                    $error_alarm = true;
-                    echo "ConnectionExceptiong error \n";
-                }
-                $falg = true;
-                sleep(2);
-            } catch (RequestException $error) {
-                if (!isset($error_alarm)) {
-                    $error_alarm = true;
-                    echo "RequestException error \n";
-                }
-                $falg = true;
-                sleep(2);
-            }
-        } while ($falg);
+        $attempt = 0;
+        $start = microtime(true);
+        $lastException = null;
 
-        return $res;
+        while (true) {
+            try {
+                // Attempt the callback and return immediately on success
+                return $callback();
+            } catch (QueryException $error) {
+                $lastException = $error;
+                if (!isset($error_alarm)) {
+                    $error_alarm = true;
+                    echo "QueryException error\n";
+                }
+            } catch (ConnectionException $error) {
+                $lastException = $error;
+                if (!isset($error_alarm)) {
+                    $error_alarm = true;
+                    echo "ConnectionException error\n";
+                }
+            } catch (RequestException $error) {
+                $lastException = $error;
+                if (!isset($error_alarm)) {
+                    $error_alarm = true;
+                    echo "RequestException error\n";
+                }
+            }
+
+            $attempt++;
+            $elapsed = microtime(true) - $start;
+            if ($attempt > $maxRetries || $elapsed >= $deadlineSeconds) {
+                // Out of retries or time budget; surface the last exception
+                throw $lastException ?? new \RuntimeException('Upstream request failed');
+            }
+            sleep($sleepSeconds);
+        }
     }
     static function heders()
     {
@@ -62,71 +67,54 @@ class git_data extends Controller
     static function heders_for_regolar($cookies)
     {
         return [
+            'authority' => 'p2p.binance.com',
             'accept' => '*/*',
-            'Accept-Encoding' => 'gzip, deflate, br,zstd',
-            'Accept-language' => 'en-SA,en;q=0.9,ar-SA;q=0.8,ar;q=0.7,en-GB;q=0.6,en-US;q=0.5',
-            'bnc-level' => '0',
-            'bnc-location' => 'BINANCE',
-            'bnc-time-zone' => 'Asia/Riyadh',
-            'bnc-uuid' => '2b86ccef-28d8-4675-b7d5-09c1a668a768',
-            'c2ctype' => 'c2c_web',
+            'accept-language' => 'ar,en-US;q=0.9,en;q=0.8,ar-SA;q=0.7,en-GB;q=0.6',
+            'bnc-uuid' => '678765ba-dc29-4e44-8f0d-a303a4fe3a63',
+            'c2ctype' => 'c2c_merchant',
             'clienttype' => 'web',
             'content-type' => 'application/json',
             'cookie' => $cookies->cookies,
             'csrftoken' => $cookies->csrftoken,
-            'device-info' => 'eyJzY3JlZW5fcmVzb2x1dGlvbiI6IjE5MjAsMTA4MCIsImF2YWlsYWJsZV9zY3JlZW5fcmVzb2x1dGlvbiI6IjE5MjAsMTAzMiIsInN5c3RlbV92ZXJzaW9uIjoiV2luZG93cyAxMCIsImJyYW5kX21vZGVsIjoidW5rbm93biIsInN5c3RlbV9sYW5nIjoiZW4tU0EiLCJ0aW1lem9uZSI6IkdNVCswMzowMCIsInRpbWV6b25lT2Zmc2V0IjotMTgwLCJ1c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEzMi4wLjAuMCBTYWZhcmkvNTM3LjM2IiwibGlzdF9wbHVnaW4iOiJDaHJvbWUgUERGIFBsdWdpbizigKpDaHJvbWUgUERGIFZpZXdlcuKArCIsImNhbnZhc19jb2RlIjoiMDcwYThkMzEiLCJ3ZWJnbF92ZW5kb3IiOiJHb29nbGUgSW5jLiAoSW50ZWwpIiwid2ViZ2xfcmVuZGVyZXIiOiJBTkdMRSAoSW50ZWwsIEludGVsKFIpIElyaXMoUikgWGUgR3JhcGhpY3MgKDB4MDAwMDQ2QTYpIERpcmVjdDNEMTEgdnNfNV8wIHBzXzVfMCwgRDNEMTEpIiwiYXVkaW8iOiIxMjQuMDQzNDc1Mjc1MTYwNzQiLCJwbGF0Zm9ybSI6IldpbjMyIiwid2ViX3RpbWV6b25lIjoiQXNpYS9SaXlhZGgiLCJkZXZpY2VfbmFtZSI6IkNocm9tZSBWMTMyLjAuMC4wIChXaW5kb3dzKSIsImZpbmdlcnByaW50IjoiMzM4ODIzMDljMGU4ODM1MDQwYWI5ZTEzNTRhNmZjNmEiLCJkZXZpY2VfaWQiOiIiLCJyZWxhdGVkX2RldmljZV9pZHMiOiIifQ==',
-            'fvideo-id' => '33805112e4dca9e1808831828837c07884a9aee0',
-            'fvideo-token' => 'mlmfN2imN0/XfNXKXe6dDf0zCP8DELgIELk5CBpfYfJw2Fb93o4wBuqGLUJ2jIAvnEkDXwMttwzUFwPxJ9ZKbgKL9QKy4eGC8UKqMBUkPqU0IPaZsJb2otGruy+7TshZmhLREAkC0u+dF6gOpQMlpvbDMuyBmnQ+Q0vUv7uDapEVHyaNTOh0Kx91t36AwnA9w=71',
+            'device-info' => 'eyJzY3JlZW5fcmVzb2x1dGlvbiI6IjE5MjAsMTA4MCIsImF2YWlsYWJsZV9zY3JlZW5fcmVzb2x1dGlvbiI6IjE5MjAsMTA0MCIsInN5c3RlbV92ZXJzaW9uIjoiV2luZG93cyAxMCIsImJyYW5kX21vZGVsIjoidW5rbm93biIsInN5c3RlbV9sYW5nIjoiYXIiLCJ0aW1lem9uZSI6IkdNVCszIiwidGltZXpvbmVPZmZzZXQiOi0xODAsInVzZXJfYWdlbnQiOiJNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvMTAwLjAuNDg5Ni42MCBTYWZhcmkvNTM3LjM2IiwibGlzdF9wbHVnaW4iOiJQREYgVmlld2VyLENocm9tZSBQREYgVmlld2VyLENocm9taXVtIFBERiBWaWV3ZXIsTWljcm9zb2Z0IEVkZ2UgUERGIFZpZXdlcixXZWJLaXQgYnVpbHQtaW4gUERGIiwiY2FudmFzX2NvZGUiOiJhNDBkZGEzMiIsIndlYmdsX3ZlbmRvciI6Ikdvb2dsZSBJbmMuIChOVklESUEpIiwid2ViZ2xfcmVuZGVyZXIiOiJBTkdMRSAoTlZJRElBLCBOVklESUEgR2VGb3JjZSBHVFggMTA2MCA2R0IgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSkiLCJhdWRpbyI6IjEyNC4wNDM0NzUyNzUxNjA3NCIsInBsYXRmb3JtIjoiV2luMzIiLCJ3ZWJfdGltZXpvbmUiOiJBc2lhL1JpeWFkaCIsImRldmljZV9uYW1lIjoiQ2hyb21lIFYxMDAuMC40ODk2LjYwIChXaW5kb3dzKSIsImZpbmdlcnByaW50IjoiNzhhYjQ0MjRiMDQ4M2MwNmU4M2Q5NjcyNWIxODBjYzkiLCJkZXZpY2VfaWQiOiIiLCJyZWxhdGVkX2RldmljZV9pZHMiOiIifQ==',
+            'fvideo-id' => '324abb49409eabdba08ffeb52bcdcdcde24728f7',
             'lang' => 'ar',
-            'origin' => 'https://www.binance.com',
-            'priority' => 'u=1, i',
-            'referer' => 'https://p2p.binance.com/ar/advEdit?code=12704852398681194496',
-            'sec-ch-ua' => '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+            'origin' => 'https://p2p.binance.com',
+            'referer' => 'https://p2p.binance.com/ar/myads',
+            'sec-ch-ua' => '" Not A;Brand";v="99", "Chromium";v="100", "Google Chrome";v="100"',
             'sec-ch-ua-mobile' => '?0',
             'sec-ch-ua-platform' => '"Windows"',
             'sec-fetch-dest' => 'empty',
             'sec-fetch-mode' => 'cors',
             'sec-fetch-site' => 'same-origin',
-            'x-passthrough-token' => '',
-            'x-trace-id' => 'c490c8b0-73b0-4f8d-8a56-3e6012212abb',
-            'x-ui-request-trace' => 'c490c8b0-73b0-4f8d-8a56-3e6012212abb'
+            'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.60 Safari/537.36',
+            'x-trace-id' => 'ee96a687-d600-4fa3-bc1c-a674b88ad426',
+            'x-ui-request-trace' => 'ee96a687-d600-4fa3-bc1c-a674b88ad426'
         ];
     }
-    static function heders_for_convert($cookies)
+    static function heders_2()
     {
-
+        $cookies = self::catch_errors(function () {
+            return cookie::all()->first();
+        });
         return [
             'authority' => 'www.binance.com',
-            'method' => 'GET',
-            'path' => '/bapi/margin/v2/friendly/new-otc/get-from-selector?walletType=SPOT_FUNDING&showBlock=1',
-            'scheme' => 'https',
-            'Accept' => '*/*',
-            'Accept-Encoding' => 'gzip, deflate, br,zstd',
-            'Accept-Language' => 'en-SA,en;q=0.9,ar-SA;q=0.8,ar;q=0.7,en-GB;q=0.6,en-US;q=0.5',
-            'Bnc-Location' => 'BINANCE',
-            'Bnc-Uuid' => '3ece6282-abad-4618-877c-e86fa082fe18',
-            'Cache-Control' => 'no-cache',
-            'Clienttype' => 'web',
-            'Content-type' => 'application/json',
+            'accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'accept-encoding' => 'gzip, deflate, br, zstd',
+            'accept-language' => 'en-SA,en;q=0.9,ar-SA;q=0.8,ar;q=0.7,en-GB;q=0.6,en-US;q=0.5',
+            'cache-control' => 'max-age=0',
             'cookie' => $cookies->cookies,
-            'csrftoken' => $cookies->csrftoken,
-            'device-info' => 'eyJzY3JlZW5fcmVzb2x1dGlvbiI6IjE5MjAsMTA4MCIsImF2YWlsYWJsZV9zY3JlZW5fcmVzb2x1dGlvbiI6IjE5MjAsMTA0MCIsInN5c3RlbV92ZXJzaW9uIjoiV2luZG93cyAxMCIsImJyYW5kX21vZGVsIjoidW5rbm93biIsInN5c3RlbV9sYW5nIjoiYXIiLCJ0aW1lem9uZSI6IkdNVCszIiwidGltZXpvbmVPZmZzZXQiOi0xODAsInVzZXJfYWdlbnQiOiJNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvMTAwLjAuNDg5Ni42MCBTYWZhcmkvNTM3LjM2IiwibGlzdF9wbHVnaW4iOiJQREYgVmlld2VyLENocm9tZSBQREYgVmlld2VyLENocm9taXVtIFBERiBWaWV3ZXIsTWljcm9zb2Z0IEVkZ2UgUERGIFZpZXdlcixXZWJLaXQgYnVpbHQtaW4gUERGIiwiY2FudmFzX2NvZGUiOiJhNDBkZGEzMiIsIndlYmdsX3ZlbmRvciI6Ikdvb2dsZSBJbmMuIChOVklESUEpIiwid2ViZ2xfcmVuZGVyZXIiOiJBTkdMRSAoTlZJRElBLCBOVklESUEgR2VGb3JjZSBHVFggMTA2MCA2R0IgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSkiLCJhdWRpbyI6IjEyNC4wNDM0NzUyNzUxNjA3NCIsInBsYXRmb3JtIjoiV2luMzIiLCJ3ZWJfdGltZXpvbmUiOiJBc2lhL1JpeWFkaCIsImRldmljZV9uYW1lIjoiQ2hyb21lIFYxMDAuMC40ODk2LjYwIChXaW5kb3dzKSIsImZpbmdlcnByaW50IjoiNzhhYjQ0MjRiMDQ4M2MwNmU4M2Q5NjcyNWIxODBjYzkiLCJkZXZpY2VfaWQiOiIiLCJyZWxhdGVkX2RldmljZV9pZHMiOiIifQ==',
-            'Fvideo-Id' => '3208c5733dda270bd919abde5e4c2e92a370532',
-            'Fvideo-Token' => 'u6BkDXV/9MSy1+7n+aXiUrAy9MPU+bieouKm7+xyazzul9R3G98j2IXkueeX9Kg0mtcSK/pkDI9PsdvBEBUAVwvQKw6wT4Pawf8hrByGdxvpTe8WfBVxVODSTOXblIv3unVtIMs0PsGcbOlA7z0AUBzM8IdhGW3ubkMQ+ZVqIeUqXNR99ELFVROUNBhQbSuTc=22',
-            'Lang' => 'ar',
-            'Pragma' => 'no-cache',
-            'Priority' => 'u=1,i',
-            'Referer' => 'https://www.binance.com/ar/convert/USDT/BTC',
-            'Sec-Ch-Ua' => "'Chromium';v='124', 'Google Chrome';v='124', 'Not-A.Brand';v='99'",
-            'Sec-Ch-Ua-Mobile' => '?0',
-            'Sec-Ch-Ua-Platform' => 'Windows',
-            'Sec-Fetch-Dest' => 'empty',
-            'Sec-Fetch-Mode' => 'cors',
-            'Sec-Fetch-Site' => 'same-origin',
-            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-            'X-Passthrough-Token' => '',
-            'X-Trace-Id' => 'c076ecee-7605-402a-a647-d45906a3fe21',
-            'X-Ui-Request-Trace' => 'c076ecee-7605-402a-a647-d45906a3fe21',
+            'if-none-match' => 'W/"0d8717f5cb62dd9eb793c934fe8354c6a"',
+            'priority' => 'u=0, i',
+            'sec-ch-ua' => '"Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"',
+            'sec-ch-ua-mobile' => '?0',
+            'sec-ch-ua-platform' => '"Windows"',
+            'sec-fetch-dest' => 'document',
+            'sec-fetch-mode' => 'navigate',
+            'sec-fetch-site' => 'none',
+            'sec-fetch-user' => '?1',
+            'upgrade-insecure-requests' => '1',
+            'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
         ];
     }
 
@@ -155,30 +143,10 @@ class git_data extends Controller
         if (isset($my_data["countries"]) > 0) {
             $countries = $my_data["countries"];
         }
-
-        $paylode = [
-            "additionalKycVerifyFilter" => 0,
-            "asset" => $my_data["asset"],
-            "assetClassifies" => ["mass", "profession", "fiat_trade"],
-            "countries" => $countries,
-            "fiat" => $my_data["fiat"],
-            "filterType" => "all",
-            "page" => 1,
-            "payTypes" => $payTypes,
-            "periods" => $periods,
-            "proMerchantAds" => false,
-            "publisherType" => null,
-            "rows" => 10,
-            "shieldMerchantAds" => false,
-            "tradeType" => $my_data["trade_type"]
-        ];
-        if (isset($my_data["search_amount"])) {
-            //add it to the paylode
-            $paylode["transAmount"] = $my_data["search_amount"];
-        }
-        $ads_list = self::catch_errors(function () use (&$paylode) {
-            return  Http::withHeaders(self::heders())->post("https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search", $paylode);
+        $ads_list = self::catch_errors(function () use (&$payTypes, &$my_data, &$periods, &$countries) {
+            return  Http::withHeaders(self::heders())->post("https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search", ["additionalKycVerifyFilter" => 0, "asset" => $my_data["asset"], "assetClassifies" => ["mass", "profession", "fiat_trade"], "countries" => $countries, "fiat" => $my_data["fiat"], "filterType" => "all", "page" => 1, "payTypes" => $payTypes, "periods" => $periods, "proMerchantAds" => false, "publisherType" => null, "rows" => 10, "shieldMerchantAds" => false, "tradeType" => $my_data["trade_type"]]);
         });
+
         return $ads_list["data"];
     }
     static function get_search_paytyps_list($my_data)
@@ -207,11 +175,10 @@ class git_data extends Controller
 
     static function change_price_req($enemy_ad, $my_ad_data, $my_data)
     {
-        //print_r(self::paylode_for_change_price($enemy_ad, $my_ad_data, $my_data));
+        print_r(self::paylode_for_change_price($enemy_ad, $my_ad_data, $my_data));
         $res = self::catch_errors(function () use ($enemy_ad, $my_ad_data, $my_data) {
             return  Http::withHeaders(self::heders())->post("https://p2p.binance.com/bapi/c2c/v3/private/c2c/adv/update", self::paylode_for_change_price($enemy_ad, $my_ad_data, $my_data));
         });
-        return $res;
         return "ok";
     }
 
@@ -235,11 +202,7 @@ class git_data extends Controller
 
     static function new_price($my_data, $enemy_ad)
     {
-        if (isset($my_data["max_price"]) && (($enemy_ad["adv"]["price"] + proces::difference_value($my_data)) > $my_data["max_price"])) {
-            return $my_data["max_price"];
-        } else {
-            return $enemy_ad["adv"]["price"] + proces::difference_value($my_data);
-        }
+        return $enemy_ad["adv"]["price"] + proces::difference_value($my_data);
     }
     static function make_my_ad_paymetods($my_data)
     {
@@ -425,8 +388,6 @@ class git_data extends Controller
         //$initAmount=self::total_initAmount($enemy_ad, $my_ad_data, $my_data);
         $initAmount = $my_ad_data["initAmount"];
         $tradeMethods = self::make_my_ad_paymetods($my_data);
-        $autorereply = self::make_my_ad_autorereply($my_data, $my_ad_data, $tradeMethods);
-
 
         $paylode = [
             "adAdditionalKycVerifyItems" => $my_ad_data["adAdditionalKycVerifyItems"],
@@ -435,7 +396,7 @@ class git_data extends Controller
             "advStatus" => $my_ad_data["advStatus"],
             "assetScale" => $my_ad_data["assetScale"],
             "asset" => $my_ad_data["asset"],
-            "autoReplyMsg" => $autorereply,
+            "autoReplyMsg" => $my_ad_data["autoReplyMsg"],
             "buyerBtcPositionLimit" => $my_ad_data["buyerBtcPositionLimit"],
             "buyerRegDaysLimit" => $my_ad_data["buyerRegDaysLimit"],
             "classify" => $my_ad_data["classify"],
@@ -570,28 +531,54 @@ class git_data extends Controller
 
     static function git_track_data()
     {
+        try {
+            $data = self::catch_errors(function () {
+                return status::where('name', "track_amount")->first();
+            });
+        } catch (\Throwable $e) {
+            // Database unavailable or timed out; return sensible defaults
+            return [
+                "amount" => 0,
+                "note" => "db_unavailable"
+            ];
+        }
 
-        $data = self::catch_errors(function () {
-            return status::where('name', "track_amount")->first();
-        });
         if ($data == null) {
-            $track_table = new  status;
-            $track_table->name = "track_amount";
-            $track_table->value = 0;
-            self::catch_errors(function () use ($track_table) {
-                $track_table->save();
-            });
-            $track_table = new  status;
-            $track_table->name = "track_status";
-            $track_table->value = 0;
-            self::catch_errors(function () use ($track_table) {
-                $track_table->save();
-            });
+            // Attempt to initialize defaults, but don't fail if DB write is unavailable
+            try {
+                $track_table = new  status;
+                $track_table->name = "track_amount";
+                $track_table->value = 0;
+                self::catch_errors(function () use ($track_table) {
+                    $track_table->save();
+                });
+
+                $track_table = new  status;
+                $track_table->name = "track_status";
+                $track_table->value = 0;
+                self::catch_errors(function () use ($track_table) {
+                    $track_table->save();
+                });
+            } catch (\Throwable $e) {
+                // Ignore initialization failure on read-only/failed DB
+            }
+            return [
+                "amount" => 0
+            ];
         } else {
-            $data3 = self::catch_errors(function () {
-                return  status::where('name', "track_status")->first();
-            });
-            return ["amount" => $data["value"] /*"status" => $data3["value"]*/];
+            try {
+                $data3 = self::catch_errors(function () {
+                    return  status::where('name', "track_status")->first();
+                });
+                return [
+                    "amount" => $data["value"],
+                    // "status" => $data3["value"],
+                ];
+            } catch (\Throwable $e) {
+                return [
+                    "amount" => $data["value"]
+                ];
+            }
         }
     }
 
@@ -606,22 +593,16 @@ class git_data extends Controller
     static function orginal_price($my_data)
     {
 
-        do {
-            $data = self::catch_errors(function () {
-                return Http::withHeaders(self::heders())->get("https://www.binance.com/bapi/composite/v1/public/marketing/symbol/list");
-            });
-            foreach ($data["data"] as $element) {
-                if ($element["name"] == $my_data["asset"]) {
-                    $element["price"] = $element["price"] * $my_data["fiat_coverter_to_usd"];
-                    $my_data["price"] = $element["price"] * $my_data["price_multiplied"];
-                    $my_data["orginal_price"] = $element["price"];
-                }
+        $data = self::catch_errors(function () {
+            return Http::withHeaders(self::heders_2())->get("https://www.binance.com/bapi/composite/v1/public/marketing/symbol/list");
+        });
+        foreach ($data["data"] as $element) {
+            if ($element["name"] == $my_data["asset"]) {
+                $element["price"] = $element["price"] * $my_data["fiat_coverter_to_usd"];
+                $my_data["price"] = $element["price"] * $my_data["price_multiplied"];
+                $my_data["orginal_price"] = $element["price"];
             }
-            if (!isset($my_data["price"])) {
-                echo "error in orginal_price\n";
-            }
-        } while (!isset($my_data["price"]));
-
+        }
         return  $my_data;
     }
 
@@ -639,6 +620,8 @@ class git_data extends Controller
 
     static function open_order_req($my_data, $traked_ad, $my_payMethods)
     {
+
+        print_r($traked_ad);
         print_r(self::paylode_for_open_order($my_data, $traked_ad, $my_payMethods));
         self::catch_errors(function () use ($my_data, $traked_ad, $my_payMethods) {
             Http::withHeaders(self::heders())->post("https://p2p.binance.com/bapi/c2c/v3/private/c2c/order-match/placeOrder", self::paylode_for_open_order($my_data, $traked_ad, $my_payMethods));
@@ -689,14 +672,18 @@ class git_data extends Controller
 
     static function pay_methed($my_data, $traked_ad, $my_payMethods)
     {
-        if ($my_data["fiat"] == "BHD") {
-            foreach ($traked_ad["adv"]["tradeMethods"] as $pay_methed) {
-                if ($pay_methed["identifier"] == "BENEFITPAY") {
-                    return $pay_methed;
-                }
-            }
-        }
-
+        // foreach ($traked_ad["adv"]["tradeMethods"] as $pay_methed) {
+        //     foreach ($my_data["payTypes"] as $payType) {
+        //         if ($pay_methed["identifier"] == $payType) {
+        //             if ($my_data["trade_type"] == "SELL") {
+        //                 if ($pay_methed["identifier"] == "Wise") {
+        //                     $pay_methed["payId"] = 33677319;
+        //                 }
+        //             }
+        //             return $pay_methed;
+        //         }
+        //     }
+        // }
         foreach ($traked_ad["adv"]["tradeMethods"] as $payMethod) {
             foreach ($my_payMethods as $my_payMethod) {
                 foreach ($my_payMethod["supported_paymethod"] as $supported_paymethod) {
@@ -832,16 +819,16 @@ class git_data extends Controller
     static function full_orders($orderStatusList, $tradetype)
     {
         $GMT_time = time() - (3600 * 3);
-        $end_time = (((($GMT_time - ($GMT_time % 86400)) + 86400 * 1)) * 1000) - 1;
+        $end_time = (((($GMT_time - ($GMT_time % 86400)) + 86400 * 1) - (3600 * 3)) * 1000) - 1;
         $start_time = (($end_time + 1) - 86400 * 1000);
         $carbon = Carbon::createFromTimestamp($start_time / 1000);
         $start_time = $carbon->subMonths(3);
         $start_time = strtotime($start_time) * 1000;
-        $paylode = ["downloadFormat" => 1, "endDate" => $end_time, "orderStatusList" => $orderStatusList, "page" => 1, "rows" => 8, "startDate" => $start_time];
+        //, "startDate" => $start_time, "endDate" => $end_time  (old)
+        $paylode = ["page" => 1, "rows" => 10, "orderStatusList" => $orderStatusList];
         if ($tradetype != "all orders") {
             $paylode = array_merge($paylode, ["tradeType" => $tradetype]);
         }
-
         $full_orders = self::catch_errors(function () use ($paylode) {
 
             return Http::withHeaders(self::heders())->post("https://p2p.binance.com/bapi/c2c/v2/private/c2c/order-match/order-list", $paylode);
@@ -898,7 +885,7 @@ class git_data extends Controller
 
         return $ad_info["data"]["buyerName"];
     }
-    // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ convert asset @@@@@@@@@@@@@@@@@@@
+    // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ convert asset @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
     static function get_assets($my_data)
     {

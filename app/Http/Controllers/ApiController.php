@@ -54,9 +54,9 @@ class ApiController extends Controller
             return  "ad out of amount";
         }
 
-        if (chack_list::chack_min($my_data, $my_ad_data)) {
-            return  "min amount is biger then the amount";
-        }
+        // if (chack_list::chack_min($my_data, $my_ad_data)) {
+        //     return  "min amount is biger then the amount";
+        // }
 
         if (chack_list::chack_full_list($ads_list, $my_data, $my_ad_data)) {
             return  "all ads bad";

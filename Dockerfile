@@ -43,11 +43,17 @@ COPY --chown=www-data:www-data --from=vendor /app/vendor/ ./vendor/
 COPY --chown=www-data:www-data --from=frontend /app/public/js ./public/js
 COPY --chown=www-data:www-data --from=frontend /app/public/css ./public/css
 
+# Ensure start.sh is executable
+RUN chmod +x /var/www/html/start.sh
+
 # Create .env from .env.example if not exists
 RUN if [ ! -f .env ]; then cp .env.example .env 2>/dev/null || echo "APP_NAME=Laravel" > .env; fi
 
 # Warm up Laravel's package manifest
 RUN php artisan package:discover --ansi || true
+
+# Set the startup command
+CMD ["/var/www/html/start.sh"]
 
 # Set correct permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache

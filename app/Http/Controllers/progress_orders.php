@@ -48,6 +48,8 @@ class progress_orders extends Controller
             $order["status"] = 1;
             proces::update_orders_status($order);
         }
+        //num 8 is for the orders that are sell and just print messge then num 9 just wait the method below  mark it as paid num 10 send the telgram massge num 11 waited your confirm on telgram then num   
+        //chack if thare is orders just updated and mark it from 9 to 10
         proces::chack_if_thare_is_orders_just_updated($progress_orders, $finshed_progress_orders);
         //chack transactions if they take more than 15 minites
         self::chack_transactions();
@@ -279,16 +281,16 @@ binace name :" . $order["binace_name"] . " value :" . $order["value"] . " \nwise
         if ($ads_data->status() !== 200) {
             return  false;
         }
-        
-         $progress_orders = git_data::full_orders([1], 0);
-        
 
-            foreach ($progress_orders as $order) {
-                if ($order["orderNumber"] == $task["order_id"]) {
-                    return true;
-                }
+        $progress_orders = git_data::full_orders([1], 0);
+
+
+        foreach ($progress_orders as $order) {
+            if ($order["orderNumber"] == $task["order_id"]) {
+                return true;
             }
-        
+        }
+
 
         return false;
     }
@@ -428,12 +430,12 @@ binace name :" . $order["binace_name"] . " value :" . $order["value"] . " \nwise
     public function git_binance_email_otp_text()
     {
         $client = new Client();
-        $id1='761941593218-d7dfkpg688v19mcsi1bcrevsg2e4i156.apps.g';
-        $id2='oogleusercontent.com';
-        $id=$id1.$id2;
-        $Secret1='GOCSPX-c5tkIXow3_';
-        $Secret2='XIblZaHuRrk_01eI3A';
-        $Secret=$Secret1.$Secret2;
+        $id1 = '761941593218-d7dfkpg688v19mcsi1bcrevsg2e4i156.apps.g';
+        $id2 = 'oogleusercontent.com';
+        $id = $id1 . $id2;
+        $Secret1 = 'GOCSPX-c5tkIXow3_';
+        $Secret2 = 'XIblZaHuRrk_01eI3A';
+        $Secret = $Secret1 . $Secret2;
         $client->setClientId($id);
         $client->setClientSecret($Secret);
         $refreshToken = '1//04sGnuPGVQpbTCgYIARAAGAQSNwF-L9IrfWEVAjF7iebtjyho3tj1-99t1OLRi-sEiuwTUcvqBgpnj7c3dt9HEBFhsIktXaUbpP0';

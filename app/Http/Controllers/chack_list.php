@@ -19,6 +19,14 @@ class chack_list extends Controller
         }
     }
 
+    static function chack_payMethods($my_data)
+    {
+        if (sizeof($my_data["payTypes"]) == 0) {
+            return true;
+        }
+        return false;
+    }
+
 
     static function chack_ad($ad, $my_data, $my_ad_data)
     {
@@ -58,6 +66,8 @@ class chack_list extends Controller
         foreach ($ads_list as $ad) {
 
             if (self::chack_ad($ad, $my_data, $my_ad_data)) {
+       
+
                 return false;
             }
         }
@@ -80,7 +90,6 @@ class chack_list extends Controller
             $min_amount_for_usdt = 10;
             $min_amount_for_BTC = 10;
         }
-        echo $my_data["track_amount"]."\n";
         if ($my_data["asset"] == "USDT" || $my_data["asset"] == "BUSD") {
             if ($my_data["track_amount"] < $min_amount_for_usdt) {
                 return true;
@@ -93,13 +102,14 @@ class chack_list extends Controller
         return false;
     }
 
-    static function chack_min($my_data, $my_ad_data)
+    static function chack_amount_for_ads_post($my_data, $my_ad_data)
     {
-        if ($my_ad_data["minSingleTransAmount"] > $my_data["track_amount"]) {
+        if ($my_data["track_amount"] < $my_ad_data["minSingleTransAmount"]) {
             return true;
         }
         return false;
     }
+
 
 
     static function chack_max_amount($my_data)
@@ -149,7 +159,11 @@ class chack_list extends Controller
                     if ($num1 == $num2) {
                         return false;
                     } else {
-                        return true;
+                        if (self::chack_max_price_diffrence($my_data,$num2)) {
+                            return true;
+                        } else {
+                            return false;
+                        }
                     }
                 }
             }
@@ -192,7 +206,13 @@ class chack_list extends Controller
 
     static function chack_ad_for_track($my_data, $ad, $my_payMethods)
     {
+        if (!isset($ad["adv"]["price"])) {
+            print_r($ad);
+            echo "no ad price found\n";
+        }
         if ($my_data["trade_type"] == "BUY") {
+       
+
             if ($ad["adv"]["price"] > $my_data["price"]) {
                 return false;
             }
@@ -225,6 +245,7 @@ class chack_list extends Controller
 
     static function chack_ads($my_data, $ads_list, $my_payMethods)
     {
+
         foreach ($ads_list as $ad) {
             if (self::chack_ad_for_track($my_data, $ad, $my_payMethods)) {
                 return true;
@@ -232,7 +253,6 @@ class chack_list extends Controller
         }
         return false;
     }
-
 
     static function set_auto_price($my_data)
     {
@@ -242,6 +262,39 @@ class chack_list extends Controller
         }
         return $my_data;
     }
+
+
+    static function set_max_price_multiplied($my_data)
+    {
+
+        if (isset($my_data["max_price_multiplied"])) {
+            $my_data["max_price"] = $my_data["orginal_price"] * $my_data["max_price_multiplied"];
+            if ($my_data["asset"] == "BTC") {
+                $my_data["max_price"]=round($my_data["max_price"], 2, PHP_ROUND_HALF_DOWN);
+            }
+            if ($my_data["asset"] == "USDT" && $my_data["fiat"] == "SAR") {
+                $my_data["max_price"]=round($my_data["max_price"], 2, PHP_ROUND_HALF_DOWN);
+            }
+            if ($my_data["asset"] == "USDT" && $my_data["fiat"] == "BHD") {
+                $my_data["max_price"]=round($my_data["max_price"], 3, PHP_ROUND_HALF_DOWN);
+            }
+        }
+        return $my_data;
+    }
+
+    static function chack_max_price_diffrence($my_data,$num2)
+    {
+        if (isset($my_data["max_price"])) {
+
+            if ($my_data["max_price"] > ($num2*1.01) || $my_data["max_price"] < ($num2*0.99)) {
+                return true;
+            }else{
+                return false;
+            }
+        }
+        return true;
+    }
+
 
     static function set_amount_for_ads($my_data,$my_ad_data)
     {

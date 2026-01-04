@@ -10,7 +10,8 @@ use App\Models\wise_transaction;
 use PhpParser\Node\Expr\Isset_;
 use App\Models\paymethod;
 use App\Models\supported_paymethod;
-
+use Monolog\Handler\IFTTTHandler;
+use Telegram\Bot\Laravel\Facades\Telegram;
 
 class proces extends Controller
 {
@@ -19,8 +20,7 @@ class proces extends Controller
     {
         $my_data["track_amount"] = 0;
         if ($my_ad_data["tradeType"] == "SELL") {
-          //  $my_data["track_amount"] = $my_ad_data["tradableQuantity"] * $my_ad_data["price"];
-          $my_data["track_amount"] =$my_ad_data["initAmount"]* git_data::new_price($my_data, git_data::enemy_ad($ads_list, $my_data, $my_ad_data));
+            $my_data["track_amount"] = $my_ad_data["surplusAmount"] * $my_data["orginal_price"];
         }
 
         return $my_data;
@@ -82,26 +82,127 @@ class proces extends Controller
 
     static function update_amount($my_data)
     {
-        if (isset($my_data["trade_type"]) && $my_data["trade_type"] == "SELL") {
-            return "STOP";
-        }
-        $full_orders = git_data::full_orders([4], 0, $my_data);
-        $track_table = status::where('name', "track_amount")->first();
-        $finshed_orders = finshed_orders::all();
 
+        $full_orders = git_data::full_orders([4], "SELL");
+        $track_table = status::where('name', "track_amount")->first();
+        $paynethod_table = paymethod::all();
+        $supported_paymethod_table = supported_paymethod::all();
+        $finshed_orders = finshed_orders::all();
         foreach ($full_orders as $order) {
-            if ($track_table->updated_at->valueOf() < $order["createTime"]) {
-                if (self::array_any($finshed_orders, $order["orderNumber"])) {
-                    $table = new  finshed_orders;
-                    $table->order_id = $order["orderNumber"];
-                    $table->save();
-                    $selled_amount = $order["totalPrice"];
-                    $track_table = status::where('name', "track_amount")->first();
-                    $track_table->value = $track_table->value - $selled_amount;
-                    $track_table->save();
-                    echo "update_amount\n";
+            if ($order["tradeType"] == "BUY") {
+                if ($track_table->updated_at->valueOf() < $order["createTime"]) {
+                    if (self::array_any($finshed_orders, $order["orderNumber"])) {
+                        $table = new  finshed_orders;
+                        $table->order_id = $order["orderNumber"];
+                        $table->save();
+                        $selled_amount = $order["totalPrice"];
+                        $track_table = status::where('name', "track_amount")->first();
+                        $track_table->value = $track_table->value - $selled_amount;
+                        $track_table->save();
+                        echo "update_amount\n";
+                    }
                 }
             }
+            if ($order["tradeType"] == "SELL") {
+                if (self::array_any($finshed_orders, $order["orderNumber"])) {
+                    foreach ($order["payMethods"] as $payMethod) {
+                        if ($payMethod["payMethodId"] == $order["selectedPayId"]) {
+                            foreach ($supported_paymethod_table as $supported_paymethod) {
+                                if ($supported_paymethod->paymethod_id == $payMethod["payMethodId"]) {
+                                    foreach ($paynethod_table as $paymethod) {
+                                        if ($paymethod->id == $supported_paymethod->paymethod_name_id) {
+                                            //update number_of_use
+                                            $table = new  finshed_orders;
+                                            $table->order_id = $order["orderNumber"];
+                                            $table->save();
+                                            $paymethod->number_of_use = $paymethod->number_of_use + 1;
+                                            $paymethod->save();
+                                            echo "update number of use for " . $paymethod["name"] . "\n";
+                                            //i want too add here cofifrmation for the payment that customer pick if it is not the same as the one in the order
+                                            //if it is not the same i will send poll massge to the telegram to fix it manually
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    $selected_paymethod_name = "";
+                    $options = [];
+                    //get the order payment methods
+                    foreach ($order["payMethods"] as $payMethod) {
+                        foreach ($supported_paymethod_table as $supported_paymethod) {
+                            if ($supported_paymethod->paymethod_id == $payMethod["payMethodId"]) {
+                                foreach ($paynethod_table as $paymethod) {
+                                    if ($paymethod->id == $supported_paymethod->paymethod_name_id) {
+                                        if ($supported_paymethod->paymethod_id == $order["selectedPayId"]) {
+                                            $selected_paymethod_name = $paymethod["name"];
+                                        }
+                                        if ($paymethod->id == $supported_paymethod->paymethod_name_id) {
+                                            $options[] = $paymethod["name"];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (count($options) > 1) {
+                        Telegram::sendPoll([
+                            'chat_id' => "438631667",
+                            'question' => "Is the payment method correct? " . $selected_paymethod_name . " ? if not please select the correct one",
+                            //list the payment methods from the order
+                            'options' => $options
+
+                        ]);
+                    }
+                }
+            }
+        }
+        Telegram::deleteWebhook(); // Delete webhook to allow getUpdates
+        $updates = Telegram::getUpdates();
+        foreach ($updates as $update) {
+            // echo "update\n";
+            //check if the update is for our poll if it start with "Is the payment method correct?" 
+            if (isset($update["poll"]) && isset($update["poll"]["question"]) && str_contains($update["poll"]["question"], "Is the payment method correct?")) {
+                //check if the poll is closed
+                //error_log("Poll found: " . $update["poll"]["question"] . " - Is closed: " . ($update["poll"]["is_closed"] ? 'true' : 'false')); // Added logging
+                $options = $update["poll"]["options"];
+                $selected_index = -1;
+                $max_votes = 0;
+
+                // Find the option with the most votes
+                foreach ($options as $index => $option) {
+                    if ($option["voter_count"] > $max_votes) {
+                        $max_votes = $option["voter_count"];
+                        $selected_index = $index;
+                    }
+                }
+                if ($selected_index != -1) {
+                    //get the poll answer(the selected payment method)
+                    // Get the poll options and votes
+
+                    $selected_paymethod = $options[$selected_index]["text"];
+
+                    // Extract the payment method name from the question
+                    $question = $update["poll"]["question"];
+                    $start_pos = strlen("Is the payment method correct? ");
+                    $end_pos = strpos($question, " ? if not please select the correct one");
+                    $question_paymethod_name = substr($question, $start_pos, $end_pos - $start_pos);
+
+                    //update the number of use for the payment methods
+                    foreach ($paynethod_table as $paymethod) {
+                        if ($paymethod["name"] == $question_paymethod_name) {
+                            $paymethod->number_of_use = $paymethod->number_of_use - 1;
+                            $paymethod->save();
+                        }
+                        if ($paymethod["name"] == $selected_paymethod) {
+                            $paymethod->number_of_use = $paymethod->number_of_use + 1;
+                            $paymethod->save();
+                            echo "Change the payment method from " . $question_paymethod_name . " to " . $selected_paymethod . "\n";
+                        }
+                    }
+                }
+            }
+            Telegram::markUpdateAsRead($update->getUpdateId());
         }
         return "work";
     }
@@ -123,7 +224,7 @@ class proces extends Controller
 You have a new " . $my_data["trade_type"] . " P2P Order \n
 time:" . $traked_ad["adv"]["payTimeLimit"] . " min\n
 price:" . $traked_ad["adv"]["price"] . "\n
-amount:" . git_data::total_amount($my_data, $traked_ad) .$my_data["fiat"].  " \n
+amount:" . git_data::total_amount($my_data, $traked_ad) . $my_data["fiat"] .  " \n
 payment method:" . git_data::pay_methed($my_data, $traked_ad, $my_payMethods)["identifier"] . "\n
 remarks:" . $traked_ad["adv"]["remarks"];
         return $telegram_massge;
@@ -193,44 +294,45 @@ remarks:" . $traked_ad["adv"]["remarks"];
             }
         }
     }
-//need to remove functions
+    //need to remove functions
     static function convert_binance_paymethod($payMethod_from_binance)
     {
         $payMethod = [];
         $payMethod["payId"] = $payMethod_from_binance["id"];
         $payMethod["payMethodId"] = $payMethod_from_binance["payMethodId"];
-        $payMethod["payType"] = $payMethod_from_binance["payType"] ;
-        $payMethod["payAccount"] = $payMethod_from_binance["payAccount"] ;
+        $payMethod["payType"] = $payMethod_from_binance["payType"];
+        $payMethod["payAccount"] = $payMethod_from_binance["payAccount"];
         $payMethod["payBank"] = $payMethod_from_binance["payBank"];
-        $payMethod["paySubBank"] = $payMethod_from_binance["paySubBank"] ;
-        $payMethod["identifier"] = $payMethod_from_binance["identifier"] ;
-        $payMethod["iconUrlColor"] = $payMethod_from_binance["iconUrlColor"] ;
-        $payMethod["tradeMethodName"] = $payMethod_from_binance["tradeMethodName"] ;
+        $payMethod["paySubBank"] = $payMethod_from_binance["paySubBank"];
+        $payMethod["identifier"] = $payMethod_from_binance["identifier"];
+        $payMethod["iconUrlColor"] = $payMethod_from_binance["iconUrlColor"];
+        $payMethod["tradeMethodName"] = $payMethod_from_binance["tradeMethodName"];
         $payMethod["tradeMethodShortName"] = $payMethod_from_binance["tradeMethodShortName"];
-        $payMethod["tradeMethodBgColor"] = $payMethod_from_binance["tradeMethodBgColor"] ;
+        $payMethod["tradeMethodBgColor"] = $payMethod_from_binance["tradeMethodBgColor"];
         return $payMethod;
     }
 
-    static function git_all_paymethod($my_data=["fiat"=>"SAR"])
+    static function git_all_paymethod($my_data = ["fiat" => "SAR"])
     {
         $paymethods  = [];
         if ($my_data["fiat"] == "BHD") {
-           $paymethods =["BENEFITPAY"];
+            $paymethods = ["BENEFITPAY"];
+            return $paymethods;;
         }
-        $payMethods_from_binance= git_data::git_my_payMethods_from_binance();
+        $payMethods_from_binance = git_data::git_my_payMethods_from_binance();
 
         $my_paymethods = paymethod::all();
         $supported_paymethods = supported_paymethod::all();
 
         foreach ($my_paymethods as $my_paymethod) {
-            $paymethods [$my_paymethod->id] = $my_paymethod->toArray();
-            $paymethods [$my_paymethod->id]['supported_paymethod'] = [];
+            $paymethods[$my_paymethod->id] = $my_paymethod->toArray();
+            $paymethods[$my_paymethod->id]['supported_paymethod'] = [];
         }
-    
+
         foreach ($my_paymethods as $my_paymethod) {
             foreach ($supported_paymethods as $supported_paymethod) {
                 if ($my_paymethod->id == $supported_paymethod->paymethod_name_id) {
-                    $paymethods [$my_paymethod->id]['supported_paymethod'][] = $supported_paymethod->toArray();
+                    $paymethods[$my_paymethod->id]['supported_paymethod'][] = $supported_paymethod->toArray();
                 }
             }
         }
@@ -244,22 +346,43 @@ remarks:" . $traked_ad["adv"]["remarks"];
                 }
             }
         }
+        //
+        if (isset($my_data["track_type"]) && ($my_data["track_type"] == "paymethods_change" || $my_data["track_type"] == "choce_best_price")) {
 
-        foreach ($paymethods as $key => $paymethod){
-            if ($paymethod['number_of_use'] >= 3){
+            $min_usage = PHP_INT_MAX;
+            foreach ($paymethods as $pm_item) {
+                if ($pm_item['number_of_use'] < $min_usage) {
+                    $min_usage = $pm_item['number_of_use'];
+                }
+            }
+
+
+            if ($min_usage < 6) {
+                foreach ($paymethods as $key => $paymethod) {
+                    if ($paymethod['number_of_use'] > $min_usage) {
+                        unset($paymethods[$key]);
+                    }
+                }
+            }
+            //print_r($paymethods);
+        }
+
+
+        foreach ($paymethods as $key => $paymethod) {
+            if ($paymethod['number_of_use'] >= 6) {
                 unset($paymethods[$key]);
             }
         }
-    
+
         return $paymethods;
     }
 
     static function git_payment($order)
     {
-        $my_payMethods=proces::git_all_paymethod();   
+        $my_payMethods = proces::git_all_paymethod();
 
 
-        
+
         foreach ($order["payMethods"] as $payMethod) {
             foreach ($my_payMethods as $my_payMethod) {
                 foreach ($my_payMethod["supported_paymethod"] as $supported_paymethod) {
@@ -362,7 +485,7 @@ remarks:" . $traked_ad["adv"]["remarks"];
     static function update_transactions($finshed_progress_orders)
     {
         $wise_transactions = wise_transaction::where("status", 0)->get();
-        echo "here\n";
+
 
         foreach ($wise_transactions as $wise_transaction) {
             if (self::chack_value($wise_transaction, $finshed_progress_orders)) {
