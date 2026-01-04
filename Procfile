@@ -1,1 +1,1 @@
-web: /var/www/html/start.sh
+web: bash /var/www/html/start.sh

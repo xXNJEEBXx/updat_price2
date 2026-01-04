@@ -43,34 +43,22 @@ COPY --chown=www-data:www-data --from=vendor /app/vendor/ ./vendor/
 COPY --chown=www-data:www-data --from=frontend /app/public/js ./public/js
 COPY --chown=www-data:www-data --from=frontend /app/public/css ./public/css
 
-# Ensure start.sh is executable
-RUN chmod +x /var/www/html/start.sh
-
 # Create .env from .env.example if not exists
 RUN if [ ! -f .env ]; then cp .env.example .env 2>/dev/null || echo "APP_NAME=Laravel" > .env; fi
 
-# Warm up Laravel's package manifest
-RUN php artisan package:discover --ansi || true
-
-# Set the startup command
-CMD ["/var/www/html/start.sh"]
+# Ensure storage directories exist
+RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs
 
 # Set correct permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Ensure storage directories exist
-RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs
-RUN chown -R www-data:www-data storage
-RUN chmod -R 775 storage
+# Warm up Laravel's package manifest
+RUN php artisan package:discover --ansi || true
 
-# Copy startup script
-COPY start.sh /usr/local/bin/start.sh
-RUN chmod +x /usr/local/bin/start.sh
+# Make start.sh executable
+RUN chmod +x /var/www/html/start.sh
 
-# Railway will set PORT environment variable dynamically
-# No need to EXPOSE a specific port for Railway
-
-# Start Apache with dynamic port configuration
-CMD ["/usr/local/bin/start.sh"]
+# Use start.sh as the entrypoint
+CMD ["/bin/bash", "/var/www/html/start.sh"]
 
